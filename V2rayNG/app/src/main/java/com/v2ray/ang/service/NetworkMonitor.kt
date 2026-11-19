@@ -16,9 +16,8 @@ import kotlinx.coroutines.launch
 /**
  * Watches the network that carries the tunnel and reports topology changes.
  *
- * Cellular -> Wi-Fi is a make-before-break handover: the new network is announced while the old one
- * is still connected, so the socket to the server is never reset and the core keeps using a dead
- * connection. Deciding that a handover happened is what this class is for, acting on it is not.
+ * Handles both make-before-break handovers (Cellular <-> Wi-Fi) and offline -> online
+ * restorations where Android may reassign the same [Network] handle after minutes or hours.
  *
  * Only used from Android P and above, see CoreServiceManager.startNetworkMonitor().
  * [onHandover] is invoked on a background thread after the debounce window and may block.
@@ -27,12 +26,24 @@ class NetworkMonitor(
     private val connectivity: ConnectivityManager,
     private val onUnderlyingNetworksChanged: (Array<Network>?) -> Unit,
     private val onHandover: () -> Unit,
+    private val onNetworkLost: () -> Unit = {},
 ) {
-    private companion object {
-        const val HANDOVER_DEBOUNCE_MS = 1000L
+    internal companion object {
+        const val HANDOVER_DEBOUNCE_MS = 1200L
+
+        internal fun shouldTriggerRecovery(
+            hadNetworkLoss: Boolean,
+            lastStableUpstreamId: String?,
+            currentNetworkId: String,
+        ): Boolean = hadNetworkLoss || (lastStableUpstreamId != null && lastStableUpstreamId != currentNetworkId)
     }
 
+    @Volatile
     private var upstream: Network? = null
+    @Volatile
+    private var lastStableUpstreamId: String? = null
+    @Volatile
+    private var hadNetworkLoss: Boolean = false
     private var handoverJob: Job? = null
     private var registered = false
 
@@ -55,21 +66,47 @@ class NetworkMonitor(
 
     private val callback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
-            val previous = upstream
+            val networkId = network.toString()
+            val trigger = shouldTriggerRecovery(hadNetworkLoss, lastStableUpstreamId, networkId)
             upstream = network
+            lastStableUpstreamId = networkId
+            hadNetworkLoss = false
             onUnderlyingNetworksChanged(arrayOf(network))
-            if (previous != null && previous != network) {
+            if (trigger) {
                 scheduleHandover(network)
             }
         }
 
         override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
-            // it's a good idea to refresh capabilities
-            onUnderlyingNetworksChanged(arrayOf(network))
+            val capsReady = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            if (capsReady && (hadNetworkLoss || upstream == null)) {
+                val networkId = network.toString()
+                val trigger = shouldTriggerRecovery(hadNetworkLoss, lastStableUpstreamId, networkId)
+                upstream = network
+                lastStableUpstreamId = networkId
+                hadNetworkLoss = false
+                onUnderlyingNetworksChanged(arrayOf(network))
+                if (trigger) {
+                    scheduleHandover(network)
+                    return
+                }
+            }
+            if (upstream == null || upstream == network) {
+                upstream = network
+                onUnderlyingNetworksChanged(arrayOf(network))
+            }
         }
 
         override fun onLost(network: Network) {
+            if (upstream != null && upstream != network) {
+                return
+            }
+            upstream = null
+            hadNetworkLoss = true
+            handoverJob?.cancel()
+            handoverJob = null
             onUnderlyingNetworksChanged(null)
+            onNetworkLost()
         }
     }
 
@@ -93,6 +130,8 @@ class NetworkMonitor(
         handoverJob?.cancel()
         handoverJob = null
         upstream = null
+        lastStableUpstreamId = null
+        hadNetworkLoss = false
         if (!registered) return
         registered = false
         try {
@@ -103,7 +142,7 @@ class NetworkMonitor(
     }
 
     private fun scheduleHandover(network: Network) {
-        LogUtil.i(AppConfig.TAG, "NetworkMonitor: Upstream is now $network")
+        LogUtil.i(AppConfig.TAG, "NetworkMonitor: Upstream recovered/changed -> $network")
         handoverJob?.cancel()
         handoverJob = CoroutineScope(Dispatchers.IO).launch {
             try {

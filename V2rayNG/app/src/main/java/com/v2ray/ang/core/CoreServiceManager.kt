@@ -39,9 +39,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import libv2ray.CoreCallbackHandler
 import libv2ray.CoreController
 import libv2ray.ProcessFinder
@@ -59,10 +61,30 @@ object CoreServiceManager {
     private var networkMonitor: NetworkMonitor? = null
     private val connectionTestScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val watchdogScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val watchdogWakeupSignal = Channel<Unit>(Channel.CONFLATED)
     private var smartWatchdogJob: Job? = null
 
     @Volatile
     private var isReloading = false
+    @Volatile
+    private var isUpstreamLost = false
+    @Volatile
+    private var forceImmediateHealthCheck = false
+    @Volatile
+    private var lastHealthyProbeElapsedMs = 0L
+
+    private fun wakeWatchdogNow(triggerImmediateCheck: Boolean = false) {
+        if (triggerImmediateCheck) {
+            forceImmediateHealthCheck = true
+        }
+        watchdogWakeupSignal.trySend(Unit)
+    }
+
+    private suspend fun waitForWatchdogStep(delayMs: Long) {
+        withTimeoutOrNull(delayMs) {
+            watchdogWakeupSignal.receive()
+        }
+    }
 
     private val connectionGeneration = AtomicLong()
     private val lifecycleLock = Any()
@@ -134,6 +156,9 @@ object CoreServiceManager {
         ContextCompat.registerReceiver(service, mMsgReceive, mFilter, Utils.receiverFlags())
 
         isStopping = false
+        isUpstreamLost = false
+        forceImmediateHealthCheck = false
+        lastHealthyProbeElapsedMs = android.os.SystemClock.elapsedRealtime()
         connectionGeneration.incrementAndGet()
         currentVpnInterface = vpnInterface
         launchCore(service, vpnInterface)
@@ -280,12 +305,26 @@ object CoreServiceManager {
                 }
             },
             onHandover = {
-                synchronized(lifecycleLock) {
+                isUpstreamLost = false
+                HotaruSmartEngine.clearTransientSessionBlocks()
+                val reloaded = synchronized(lifecycleLock) {
                     if (networkMonitor === monitor && isRunning() && !isStopping) {
                         HotaruSmartEngine.optimizeForClientNetwork(service)
                         reloadCore()
+                    } else {
+                        false
                     }
                 }
+                if (reloaded) {
+                    HotaruCommunityCounter.onDaemonNetworkOrWakeRecovery(
+                        socksPortProvider = { SettingsManager.getSocksPort() },
+                        minGapMs = 5_000L,
+                    )
+                    wakeWatchdogNow(triggerImmediateCheck = true)
+                }
+            },
+            onNetworkLost = {
+                isUpstreamLost = true
             },
         )
         networkMonitor = monitor
@@ -305,13 +344,21 @@ object CoreServiceManager {
             delay(1000L)
             while (!isStopping) {
                 if (isReloading) {
-                    delay(1000L)
+                    waitForWatchdogStep(1000L)
                     continue
                 }
                 if (!isRunning()) break
                 val guid = runningGuid
                 if (guid == null) {
-                    delay(1000L)
+                    waitForWatchdogStep(1000L)
+                    continue
+                }
+                if (isUpstreamLost || !HotaruSmartEngine.hasPhysicalInternet(service)) {
+                    // Device has no upstream connection: never penalize servers or churn failover while offline.
+                    failures = 0
+                    slowSamples = 0
+                    forceImmediateHealthCheck = false
+                    waitForWatchdogStep(2000L)
                     continue
                 }
                 val generation = connectionGeneration.get()
@@ -322,48 +369,86 @@ object CoreServiceManager {
                     slowSamples = 0
                     consecutiveNullSwitches = 0
                 }
+                val isWakeOrRestoreCheck = forceImmediateHealthCheck
+                forceImmediateHealthCheck = false
+
                 val port = SettingsManager.getSocksPort()
-                val connectivity = HotaruTunnelProbe.connectivity(port)
+                var connectivity = HotaruTunnelProbe.connectivity(port)
+                if (connectivity.code != 204 && isWakeOrRestoreCheck && HotaruSmartEngine.hasPhysicalInternet(service)) {
+                    // CGNAT or deep Doze often drops long-idle TCP/QUIC sockets silently; flush core once before blaming the node.
+                    val reloadedForWake = synchronized(lifecycleLock) {
+                        if (HotaruHealthPolicy.isCurrent(guid, generation, runningGuid, connectionGeneration.get()) &&
+                            !isReloading && !isStopping && isRunning()) {
+                            HotaruSmartEngine.optimizeForClientNetwork(service)
+                            reloadCore()
+                        } else {
+                            false
+                        }
+                    }
+                    if (reloadedForWake) {
+                        delay(400L)
+                        connectivity = HotaruTunnelProbe.connectivity(port)
+                        if (connectivity.code != 204 && HotaruSmartEngine.hasPhysicalInternet(service)) {
+                            // Node is genuinely unreachable after fresh socket flush -> fail over immediately instead of waiting 3 slow cycles.
+                            failures = 3
+                        }
+                    }
+                }
+
                 val now = android.os.SystemClock.elapsedRealtime()
-                val exploringSlowRoutes = HotaruHealthPolicy.mayExploreSlowAlternative(slowRouteSwitches)
-                val throughputDue = (lastThroughputMs == 0L || now - lastThroughputMs >= HotaruHealthPolicy.THROUGHPUT_INTERVAL_MS) &&
-                    (connectivity.code == 204)
-                // Only run synthetic probe when connectivity is ok and interval is due, or when corroborating an ambiguous 204
+                val activeGuid = runningGuid ?: guid
+                val activeGen = connectionGeneration.get()
+                val throughputDue = (lastThroughputMs == 0L || now - lastThroughputMs >= HotaruHealthPolicy.THROUGHPUT_INTERVAL_MS ||
+                    (isWakeOrRestoreCheck && now - lastThroughputMs >= 15_000L)) && (connectivity.code == 204)
                 val payload = if (throughputDue) HotaruTunnelProbe.throughput(port) else null
                 ensureActive()
-                if (!HotaruHealthPolicy.isCurrent(guid, generation, runningGuid, connectionGeneration.get()) ||
+                if (!HotaruHealthPolicy.isCurrent(activeGuid, activeGen, runningGuid, connectionGeneration.get()) ||
                     isReloading || isStopping || !isRunning()) continue
+
+                if (isUpstreamLost || !HotaruSmartEngine.hasPhysicalInternet(service)) {
+                    failures = 0
+                    slowSamples = 0
+                    waitForWatchdogStep(2000L)
+                    continue
+                }
 
                 val reachable = connectivity.code == 204 || payload?.validPayload == true
                 if (reachable) {
                     failures = 0
                     consecutiveNullSwitches = 0
+                    lastHealthyProbeElapsedMs = now
+                    if (isWakeOrRestoreCheck) {
+                        HotaruCommunityCounter.onDaemonNetworkOrWakeRecovery(
+                            socksPortProvider = { SettingsManager.getSocksPort() },
+                            minGapMs = 10_000L,
+                        )
+                    }
                     val delayMs = connectivity.elapsedMs.takeIf { connectivity.code == 204 } ?: payload!!.elapsedMs
                     currentLivePingMs = delayMs
-                    MmkvManager.encodeServerTestDelayMillis(guid, delayMs)
+                    MmkvManager.encodeServerTestDelayMillis(activeGuid, delayMs)
                     MessageHelper.sendMsg2UI(service, AppConfig.MSG_MEASURE_DELAY_RESULT, ConnectionTestResult(delayMillis = delayMs))
                     if (payload != null) {
                         lastThroughputMs = now
                         HotaruSmartEngine.recordThroughput(
-                            service, guid, if (payload.validPayload) payload.bytes else 0, payload.elapsedMs,
+                            service, activeGuid, if (payload.validPayload) payload.bytes else 0, payload.elapsedMs,
                         )
                         val fast = payload.validPayload && HotaruHealthPolicy.isFast(payload.bytes, payload.elapsedMs)
                         slowSamples = if (fast) 0 else slowSamples + 1
                         if (fast) slowRouteSwitches = 0
-                        android.util.Log.i("HotaruSmartWatchdog", "mode=shared guid=$guid bytes=${payload.bytes} elapsedMs=${payload.elapsedMs} bytesPerSecond=${HotaruHealthPolicy.bytesPerSecond(payload.bytes, payload.elapsedMs)} valid=${payload.validPayload} fast=$fast slowSamples=$slowSamples")
+                        android.util.Log.i("HotaruSmartWatchdog", "mode=shared guid=$activeGuid bytes=${payload.bytes} elapsedMs=${payload.elapsedMs} bytesPerSecond=${HotaruHealthPolicy.bytesPerSecond(payload.bytes, payload.elapsedMs)} valid=${payload.validPayload} fast=$fast slowSamples=$slowSamples")
                     }
                     if (payload?.validPayload == true && HotaruSmartEngine.shouldCheckSearch()) {
                         HotaruSmartEngine.reserveSearchCheck()
                         val search = HotaruTunnelProbe.search(port)
                         ensureActive()
-                        if (HotaruHealthPolicy.isCurrent(guid, generation, runningGuid, connectionGeneration.get()) && !isStopping && !isReloading) {
-                            if (search.code > 0) HotaruSmartEngine.recordSearchRestriction(service, guid, search.restricted)
-                            LogUtil.i("HotaruSmartWatchdog", "mode=shared guid=$guid searchStatus=${search.code} restricted=${search.restricted}; destination restriction alone never triggers failover")
+                        if (HotaruHealthPolicy.isCurrent(activeGuid, activeGen, runningGuid, connectionGeneration.get()) && !isStopping && !isReloading) {
+                            if (search.code > 0) HotaruSmartEngine.recordSearchRestriction(service, activeGuid, search.restricted)
+                            LogUtil.i("HotaruSmartWatchdog", "mode=shared guid=$activeGuid searchStatus=${search.code} restricted=${search.restricted}; destination restriction alone never triggers failover")
                         }
                     }
                 } else {
                     failures++
-                    LogUtil.w("HotaruSmartWatchdog", "mode=shared guid=$guid phase=probe independent failures=$failures")
+                    LogUtil.w("HotaruSmartWatchdog", "mode=shared guid=$activeGuid phase=probe independent failures=$failures")
                 }
                 ensureActive()
                 // A healthy route stays connected. Failover when consecutive independent failures occur (failures >= 3)
@@ -373,12 +458,14 @@ object CoreServiceManager {
                 }
                 val actionableSlowSamples = if (HotaruHealthPolicy.mayExploreSlowAlternative(slowRouteSwitches)) slowSamples else 0
                 val cooldown = if (failures >= 3) HotaruHealthPolicy.DEAD_COOLDOWN_MS else HotaruHealthPolicy.SWITCH_COOLDOWN_MS
-                if (HotaruHealthPolicy.shouldSwitch(failures, actionableSlowSamples, now, lastSwitchMs, cooldown)) {
+                if (HotaruHealthPolicy.shouldSwitch(failures, actionableSlowSamples, now, lastSwitchMs, cooldown) &&
+                    HotaruSmartEngine.hasPhysicalInternet(service)) {
                     var coreLeftDead = false
+                    var switchedSucceeded = false
                     synchronized(lifecycleLock) {
-                        if (HotaruHealthPolicy.isCurrent(guid, generation, runningGuid, connectionGeneration.get()) &&
-                            !isReloading && !isStopping && isRunning()) {
-                            val switched = HotaruSmartEngine.switchToNextVerifiedServer(service, guid)
+                        if (HotaruHealthPolicy.isCurrent(activeGuid, activeGen, runningGuid, connectionGeneration.get()) &&
+                            !isReloading && !isStopping && isRunning() && HotaruSmartEngine.hasPhysicalInternet(service)) {
+                            val switched = HotaruSmartEngine.switchToNextVerifiedServer(service, activeGuid)
                             if (switched != null) {
                                 consecutiveNullSwitches = 0
                                 if (failures < 3) slowRouteSwitches++ else slowRouteSwitches = 0
@@ -386,6 +473,7 @@ object CoreServiceManager {
                                 slowSamples = 0
                                 failures = 0
                                 val reloaded = reloadCore()
+                                switchedSucceeded = reloaded
                                 android.util.Log.w("HotaruSmartWatchdog", "mode=shared phase=failover guid=${switched.guid} reloaded=$reloaded slowSwitches=$slowRouteSwitches")
                                 if (!reloaded && !isStopping && !isRunning()) {
                                     // Never trap the device behind an open TUN interface with a dead core; try one immediate backup before clean stop.
@@ -397,6 +485,7 @@ object CoreServiceManager {
                                     } else {
                                         false
                                     }
+                                    switchedSucceeded = backupReloaded
                                     android.util.Log.w("HotaruSmartWatchdog", "mode=shared phase=failover-recovery backup=${backup?.guid} reloaded=$backupReloaded")
                                     coreLeftDead = !backupReloaded && !isStopping && !isRunning()
                                 }
@@ -405,13 +494,19 @@ object CoreServiceManager {
                             }
                         }
                     }
+                    if (switchedSucceeded) {
+                        HotaruCommunityCounter.onDaemonNetworkOrWakeRecovery(
+                            socksPortProvider = { SettingsManager.getSocksPort() },
+                            minGapMs = 5_000L,
+                        )
+                    }
                     if (coreLeftDead) {
                         LogUtil.e(AppConfig.TAG, "StartCore-Manager: Failover recovery failed to restart core; stopping VPN cleanly to avoid dead tunnel")
                         serviceControl?.get()?.stopService() ?: stopCoreLoop()
                         break
                     }
                 }
-                delay(HotaruHealthPolicy.watchdogPollDelayMs(failures, consecutiveNullSwitches))
+                waitForWatchdogStep(HotaruHealthPolicy.watchdogPollDelayMs(failures, consecutiveNullSwitches))
             }
         }
     }
@@ -721,9 +816,15 @@ object CoreServiceManager {
                     NotificationManager.stopSpeedNotification()
                 }
 
-                Intent.ACTION_SCREEN_ON -> {
-                    LogUtil.i(AppConfig.TAG, "StartCore-Manager: Screen on")
+                Intent.ACTION_SCREEN_ON, Intent.ACTION_USER_PRESENT -> {
+                    LogUtil.i(AppConfig.TAG, "StartCore-Manager: Screen awake (${intent.action})")
                     NotificationManager.startSpeedNotification()
+                    if (isRunning() && !isStopping && !isUpstreamLost) {
+                        val elapsedSinceHealthy = android.os.SystemClock.elapsedRealtime() - lastHealthyProbeElapsedMs
+                        if (elapsedSinceHealthy >= 45_000L) {
+                            wakeWatchdogNow(triggerImmediateCheck = true)
+                        }
+                    }
                 }
             }
         }

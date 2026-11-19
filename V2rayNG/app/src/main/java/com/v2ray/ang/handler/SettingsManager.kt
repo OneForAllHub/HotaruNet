@@ -465,7 +465,7 @@ object SettingsManager {
         // HotaruNet defaults: Iran Network Invariants & Cyber-Anime Dark Mode
         MmkvManager.encodeSettings(AppConfig.PREF_IPV6_ENABLED, false)
         MmkvManager.encodeSettings(AppConfig.PREF_LOCAL_DNS_ENABLED, true)
-        MmkvManager.encodeSettings(AppConfig.PREF_FAKE_DNS_ENABLED, true)
+        MmkvManager.encodeSettings(AppConfig.PREF_FAKE_DNS_ENABLED, false)
         MmkvManager.encodeSettings(AppConfig.PREF_UI_MODE_NIGHT, "2")
         MmkvManager.encodeSettings(AppConfig.PREF_DYNAMIC_COLOR, false)
         MmkvManager.encodeSettings(AppConfig.PREF_VPN_DNS, AppConfig.DNS_VPN)

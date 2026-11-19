@@ -14,7 +14,7 @@
 [![Android](https://img.shields.io/badge/Android-7.0%2B%20(API%2024--35)-3DDC84?style=for-the-badge&logo=android)](https://github.com/OneForAllHub/HotaruNet/releases/latest)
 [![License](https://img.shields.io/badge/License-GPL--3.0-A855F7?style=for-the-badge)](LICENSE)
 
-[📥 **دانلود نسخه آخر (v2.3.42)**](#-دانلود-مستقیم-آخرین-نسخه-v2342) • [📱 **اسکرین‌شات‌ها (فارسی / EN)**](#-تصاویر-محیط-برنامه-فارسی-و-انگلیسی) • [✨ **امکانات**](#-ویژگی‌های-کلیدی-hotarunet) • [🏗️ **معماری**](ARCHITECTURE.fa.md) • [❓ **سوالات متداول**](#-سوالات-متداول-faq)
+[📥 **دانلود نسخه آخر (v2.3.43)**](#-دانلود-مستقیم-آخرین-نسخه-v2343) • [📱 **اسکرین‌شات‌ها (فارسی / EN)**](#-تصاویر-محیط-برنامه-فارسی-و-انگلیسی) • [✨ **امکانات**](#-ویژگی‌های-کلیدی-hotarunet) • [🏗️ **معماری**](ARCHITECTURE.fa.md) • [❓ **سوالات متداول**](#-سوالات-متداول-faq)
 
 </div>
 
@@ -70,17 +70,17 @@
 
 ---
 
-## 📥 دانلود مستقیم آخرین نسخه (`v2.3.42`)
+## 📥 دانلود مستقیم آخرین نسخه (`v2.3.43`)
 
 فایل نصبی امضاشده (APK) را مستقیماً از [**صفحه Releases گیت‌هاب**](https://github.com/OneForAllHub/HotaruNet/releases/latest) دانلود کنید — **بدون نیاز به سابسکریپشن، ثبت‌نام یا وارد کردن دستی کانفیگ**:
 
 | نام فایل APK | پردازنده / دستگاه هدف | پیشنهاد برای چه گوشی‌هایی؟ |
 | --- | --- | --- |
-| [`HotaruNet_2.3.42_arm64-v8a.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **ARM64 (64 بیتی)** (~26.3 MB) | مناسب برای تقریباً تمام گوشی‌های اندرویدی جدید (توصیه‌شده) |
-| [`HotaruNet_2.3.42_armeabi-v7a.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **ARMv7 (32 بیتی)** (~26.8 MB) | گوشی‌ها و تبلت‌های قدیمی‌تر |
-| [`HotaruNet_2.3.42_x86_64.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **x86_64** (~27.3 MB) | شبیه‌سازهای اندروید و کروم‌بوک |
-| [`HotaruNet_2.3.42_x86.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **x86** (~27.8 MB) | شبیه‌سازهای ۳۲ بیتی |
-| [`HotaruNet_2.3.42_universal.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **همه‌کاره (Universal)** (~64.1 MB) | قابل نصب روی تمام دستگاه‌ها و پردازنده‌ها |
+| [`HotaruNet_2.3.43_arm64-v8a.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **ARM64 (64 بیتی)** (~26.3 MB) | مناسب برای تقریباً تمام گوشی‌های اندرویدی جدید (توصیه‌شده) |
+| [`HotaruNet_2.3.43_armeabi-v7a.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **ARMv7 (32 بیتی)** (~26.8 MB) | گوشی‌ها و تبلت‌های قدیمی‌تر |
+| [`HotaruNet_2.3.43_x86_64.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **x86_64** (~27.3 MB) | شبیه‌سازهای اندروید و کروم‌بوک |
+| [`HotaruNet_2.3.43_x86.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **x86** (~27.8 MB) | شبیه‌سازهای ۳۲ بیتی |
+| [`HotaruNet_2.3.43_universal.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **همه‌کاره (Universal)** (~64.2 MB) | قابل نصب روی تمام دستگاه‌ها و پردازنده‌ها |
 
 > 💡 هش SHA-256 همهٔ فایل‌ها در صفحهٔ [Releases](https://github.com/OneForAllHub/HotaruNet/releases/latest) قرار دارد و روی اندروید ۷ تا ۱۵ (API 24–35) پشتیبانی می‌شود.
 
@@ -124,7 +124,7 @@ HotaruNet با رابط کاربری **Cyber-Anime (Jetpack Compose)** و موت
 
 <details>
 <summary><b>کدام فایل APK را برای گوشی خودم دانلود کنم؟</b></summary>
-<p>برای تقریباً همهٔ گوشی‌های اندرویدی جدید، فایل کم‌حجم‌تر <code>HotaruNet_2.3.42_arm64-v8a.apk</code> بهترین گزینه است. اگر مدل پردازنده را نمی‌دانید، نسخهٔ <code>HotaruNet_2.3.42_universal.apk</code> روی تمام گوشی‌ها نصب می‌شود.</p>
+<p>برای تقریباً همهٔ گوشی‌های اندرویدی جدید، فایل کم‌حجم‌تر <code>HotaruNet_2.3.43_arm64-v8a.apk</code> بهترین گزینه است. اگر مدل پردازنده را نمی‌دانید، نسخهٔ <code>HotaruNet_2.3.43_universal.apk</code> روی تمام گوشی‌ها نصب می‌شود.</p>
 </details>
 
 <details>

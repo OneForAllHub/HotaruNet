@@ -4,6 +4,12 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import okhttp3.Request
+import java.io.ByteArrayOutputStream
+import java.net.InetAddress
+import java.net.ServerSocket
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 
 class HotaruCommunityCounterTest {
 
@@ -97,5 +103,78 @@ class HotaruCommunityCounterTest {
         assertEquals("", com.v2ray.ang.util.HotaruCrypto.getTelemetryUrl())
         assertEquals("", com.v2ray.ang.util.HotaruCrypto.getTelemetrySecret())
         HotaruCommunityCounter.resetForTest()
+    }
+
+    @Test
+    fun `createRemoteDnsSocksClient tunnels unresolvable domains via SOCKS5 ATYP 0x03 without local DNS`() {
+        ServerSocket(0, 1, InetAddress.getByName("127.0.0.1")).use { server ->
+            val capturedReq = CompletableFuture<Triple<Int, String, String>>()
+            val worker = Thread {
+                try {
+                    server.accept().use { sock ->
+                        val inp = sock.getInputStream()
+                        val out = sock.getOutputStream()
+                        // Greeting: VER=5, NMETHODS=1, METHOD=0
+                        val gVer = inp.read()
+                        val nMeth = inp.read()
+                        repeat(nMeth) { inp.read() }
+                        out.write(byteArrayOf(0x05, 0x00))
+                        out.flush()
+
+                        // CONNECT: VER=5, CMD=1, RSV=0, ATYP=3, LEN, HOST, PORT
+                        inp.read() // VER
+                        inp.read() // CMD
+                        inp.read() // RSV
+                        val atyp = inp.read()
+                        val len = inp.read()
+                        val hostBytes = ByteArray(len)
+                        var readSoFar = 0
+                        while (readSoFar < len) {
+                            val n = inp.read(hostBytes, readSoFar, len - readSoFar)
+                            if (n < 0) break
+                            readSoFar += n
+                        }
+                        val host = String(hostBytes, Charsets.UTF_8)
+                        inp.read(); inp.read() // target port
+
+                        // Reply: succeeded, IPv4 0.0.0.0:0
+                        out.write(byteArrayOf(0x05, 0x00, 0x00, 0x01, 0, 0, 0, 0, 0, 0))
+                        out.flush()
+
+                        // Read tunneled HTTP request headers & respond with telemetry JSON
+                        val buf = ByteArrayOutputStream()
+                        while (true) {
+                            val b = inp.read()
+                            if (b < 0) break
+                            buf.write(b)
+                            if (buf.toString(Charsets.UTF_8.name()).contains("\r\n\r\n")) break
+                        }
+                        val httpBody = """{"ok":true,"onlineUsers":17}"""
+                        out.write(("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ${httpBody.length}\r\nConnection: close\r\n\r\n$httpBody").toByteArray())
+                        out.flush()
+                        capturedReq.complete(Triple(atyp, host, buf.toString(Charsets.UTF_8.name())))
+                    }
+                } catch (t: Throwable) {
+                    capturedReq.completeExceptionally(t)
+                }
+            }.apply { isDaemon = true; start() }
+
+            val client = HotaruCommunityCounter.createRemoteDnsSocksClient(socksPort = server.localPort, timeoutSec = 3L)
+            val req = Request.Builder()
+                .url("http://unresolvable-remote-only.hotaru.invalid/v1/stats?cid=test")
+                .get()
+                .build()
+            val body = client.newCall(req).execute().use { res ->
+                assertEquals(200, res.code)
+                res.body.string()
+            }
+            val (atyp, host, httpText) = capturedReq.get(3, TimeUnit.SECONDS)
+            worker.join(1000)
+
+            assertEquals(0x03, atyp)
+            assertEquals("unresolvable-remote-only.hotaru.invalid", host)
+            assertTrue(httpText.contains("Host: unresolvable-remote-only.hotaru.invalid"))
+            assertEquals(17L, HotaruCommunityCounter.parseOnlineUsersFromJson(body))
+        }
     }
 }

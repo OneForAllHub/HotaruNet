@@ -422,7 +422,7 @@ object HotaruSmartEngine {
         MmkvManager.encodeSettings(AppConfig.PREF_DOMESTIC_DNS, AppConfig.DNS_DIRECT)
         MmkvManager.encodeSettings(AppConfig.PREF_VPN_DNS, AppConfig.DNS_VPN)
         MmkvManager.encodeSettings(AppConfig.PREF_IPV6_ENABLED, false)
-        MmkvManager.encodeSettings(AppConfig.PREF_FAKE_DNS_ENABLED, true)
+        MmkvManager.encodeSettings(AppConfig.PREF_FAKE_DNS_ENABLED, false)
         // Enable smart per-protocol fragment: CoreOutboundBuilder strictly applies tlshello ONLY to standard TLS (skipping REALITY)
         MmkvManager.encodeSettings(AppConfig.PREF_FRAGMENT_ENABLED, true)
         MmkvManager.encodeSettings(AppConfig.PREF_FRAGMENT_PACKETS, "tlshello")
@@ -450,6 +450,21 @@ object HotaruSmartEngine {
         )
     }
 
+    fun hasPhysicalInternet(context: Context): Boolean = runCatching {
+        val cm = context.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            ?: return@runCatching true
+        cm.allNetworks.any { net ->
+            val caps = cm.getNetworkCapabilities(net) ?: return@any false
+            !caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN) &&
+                caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        }
+    }.getOrDefault(true)
+
+    fun clearTransientSessionBlocks() {
+        blacklistedGuids.clear()
+        MmkvManager.encodeSettings(KEY_LAST_SCAN_MS, 0L)
+    }
+
     /**
      * Marks a server GUID as failed/unhealthy for this session and persists negative delay in MMKV.
      */
@@ -461,7 +476,6 @@ object HotaruSmartEngine {
             return
         }
         blacklistedGuids.add(guid)
-        MmkvManager.encodeSettings("hotaru_evidence_$guid", "")
         MmkvManager.encodeServerTestDelayMillis(guid, -1L)
     }
 
@@ -930,8 +944,10 @@ object HotaruSmartEngine {
                         scoreVerifiedCandidate(cand, delay, bytes)
                     } else {
                         Log.w(LOG_TAG, "$stageLabel candidate failed live verification: guid=${cand.guid} remarks='${cand.profile.remarks}'")
-                        recordTierOutcome(scanNetwork, cand.tier, 0L, false)
-                        blacklistServer(cand.guid)
+                        if (hasPhysicalInternet(appContext)) {
+                            recordTierOutcome(scanNetwork, cand.tier, 0L, false)
+                            blacklistServer(cand.guid)
+                        }
                         null
                     }
                 }
@@ -975,6 +991,10 @@ object HotaruSmartEngine {
      */
     fun switchToNextVerifiedServer(context: Context, failedGuid: String?): SelectionResult? {
         val appContext = context.applicationContext
+        if (!hasPhysicalInternet(appContext)) {
+            Log.w(LOG_TAG, "switchToNextVerifiedServer paused: no physical internet connectivity")
+            return null
+        }
         val networkProfile = optimizeForClientNetwork(appContext)
         blacklistServer(failedGuid)
 

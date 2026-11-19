@@ -16,8 +16,8 @@ android {
         applicationId = "com.hotarunet.client"
         minSdk = 24
         targetSdk = 35
-        versionCode = 785
-        versionName = "2.3.42"
+        versionCode = 786
+        versionName = "2.3.43"
 
         val abiFilterList = (properties["ABI_FILTERS"] as? String)?.split(';')
         splits {

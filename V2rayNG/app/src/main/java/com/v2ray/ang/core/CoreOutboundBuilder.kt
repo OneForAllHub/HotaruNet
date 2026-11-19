@@ -77,11 +77,28 @@ object CoreOutboundBuilder {
                 outbound.mux?.concurrency = -1
             }
 
+            applyTcpLatencyDefaults(outbound)
+
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "Failed to update outbound with global settings", e)
             return false
         }
         return true
+    }
+
+    internal fun applyTcpLatencyDefaults(outbound: OutboundBean) {
+        val protocol = outbound.protocol
+        if (!protocol.equals(EConfigType.WIREGUARD.name, true)
+            && !protocol.equals(EConfigType.HYSTERIA2.name, true)
+            && !protocol.equals(EConfigType.HYSTERIA.name, true)
+            && !protocol.equals(EConfigType.MASQUE.name, true)
+            && !protocol.equals("freedom", true)
+        ) {
+            // Disable Nagle delay and keep carrier NAT bindings alive across idle chats (helps Telegram load instantaneously)
+            val sockopt = outbound.ensureSockopt()
+            if (sockopt.TcpNoDelay == null) sockopt.TcpNoDelay = true
+            if (sockopt.tcpKeepAliveIdle == null) sockopt.tcpKeepAliveIdle = 25
+        }
     }
 
     /** Creates an initial outbound template for a protocol type. */

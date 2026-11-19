@@ -14,7 +14,7 @@
 [![Android](https://img.shields.io/badge/Android-7.0%2B%20(API%2024--35)-3DDC84?style=for-the-badge&logo=android)](https://github.com/OneForAllHub/HotaruNet/releases/latest)
 [![License](https://img.shields.io/badge/License-GPL--3.0-A855F7?style=for-the-badge)](LICENSE)
 
-[📥 **Download APK (v2.3.42)**](#-download-latest-apk-v2342) • [📱 **Screenshots (EN / FA)**](#-screenshots--bilingual-ui) • [✨ **Features**](#-what-makes-hotarunet-different) • [🏗️ **Architecture**](ARCHITECTURE.md) • [❓ **FAQ**](#-frequently-asked-questions-faq)
+[📥 **Download APK (v2.3.43)**](#-download-latest-apk-v2343) • [📱 **Screenshots (EN / FA)**](#-screenshots--bilingual-ui) • [✨ **Features**](#-what-makes-hotarunet-different) • [🏗️ **Architecture**](ARCHITECTURE.md) • [❓ **FAQ**](#-frequently-asked-questions-faq)
 
 </div>
 
@@ -68,17 +68,17 @@ HotaruNet ships with an instant in-app **`FA / EN`** switcher supporting full **
 
 ---
 
-## 📥 Download Latest APK (`v2.3.42`)
+## 📥 Download Latest APK (`v2.3.43`)
 
 Get the signed Android APK directly from [**GitHub Releases (Latest)**](https://github.com/OneForAllHub/HotaruNet/releases/latest) — **no subscription links, account registration, or manual config imports required**:
 
 | File Name | Target Devices / CPU Architecture | Recommended For |
 | --- | --- | --- |
-| [`HotaruNet_2.3.42_arm64-v8a.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **ARM64 (64-bit)** (~26.3 MB) | Almost all modern Android smartphones |
-| [`HotaruNet_2.3.42_armeabi-v7a.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **ARMv7 (32-bit)** (~26.8 MB) | Older Android phones & tablets |
-| [`HotaruNet_2.3.42_x86_64.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **x86_64** (~27.3 MB) | Chromebooks & PC Android emulators |
-| [`HotaruNet_2.3.42_x86.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **x86** (~27.8 MB) | Legacy 32-bit x86 emulators |
-| [`HotaruNet_2.3.42_universal.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **Universal (All ABIs)** (~64.1 MB) | Unsure which CPU your phone uses |
+| [`HotaruNet_2.3.43_arm64-v8a.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **ARM64 (64-bit)** (~26.3 MB) | Almost all modern Android smartphones |
+| [`HotaruNet_2.3.43_armeabi-v7a.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **ARMv7 (32-bit)** (~26.8 MB) | Older Android phones & tablets |
+| [`HotaruNet_2.3.43_x86_64.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **x86_64** (~27.3 MB) | Chromebooks & PC Android emulators |
+| [`HotaruNet_2.3.43_x86.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **x86** (~27.8 MB) | Legacy 32-bit x86 emulators |
+| [`HotaruNet_2.3.43_universal.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **Universal (All ABIs)** (~64.2 MB) | Unsure which CPU your phone uses |
 
 > 💡 All release APKs carry SHA-256 verification checksums on the [Releases page](https://github.com/OneForAllHub/HotaruNet/releases/latest) and work out-of-the-box on Android 7.0 through Android 15 (API 24–35).
 
@@ -122,7 +122,7 @@ HotaruNet combines a **Zero-Config Cyber-Anime Jetpack Compose UI** with an **Au
 
 <details>
 <summary><b>Which APK file should I download for my Android phone?</b></summary>
-<p>Most phones from the last 7+ years use <code>HotaruNet_2.3.42_arm64-v8a.apk</code> (~26 MB). If you are unsure or installing across multiple devices, choose <code>HotaruNet_2.3.42_universal.apk</code>.</p>
+<p>Most phones from the last 7+ years use <code>HotaruNet_2.3.43_arm64-v8a.apk</code> (~26 MB). If you are unsure or installing across multiple devices, choose <code>HotaruNet_2.3.43_universal.apk</code>.</p>
 </details>
 
 <details>

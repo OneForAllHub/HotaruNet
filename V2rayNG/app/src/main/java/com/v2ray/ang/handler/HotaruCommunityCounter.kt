@@ -13,16 +13,24 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import okhttp3.Dns
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.IOException
+import java.io.InputStream
+import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Proxy
+import java.net.Socket
+import java.net.SocketAddress
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
+import javax.net.SocketFactory
 import kotlin.math.max
 
 /**
@@ -55,6 +63,9 @@ object HotaruCommunityCounter {
     @Volatile
     private var lastAccountedSessionBytes: Long = 0L
 
+    private val lastBeatSuccessWallMs = AtomicLong(0L)
+    private val lastPulseAttemptWallMs = AtomicLong(0L)
+
     // Fallback in-memory mirrors used when MMKV is unavailable in standalone JVM unit tests.
     private var memClientId: String? = null
     private var memSeq: Long = 0L
@@ -71,12 +82,102 @@ object HotaruCommunityCounter {
             .build()
     }
 
-    private fun proxiedClient(socksPort: Int, timeoutSec: Long = 5L): OkHttpClient = OkHttpClient.Builder()
-        .proxy(Proxy(Proxy.Type.SOCKS, InetSocketAddress("127.0.0.1", socksPort)))
-        .connectTimeout(timeoutSec, TimeUnit.SECONDS)
-        .readTimeout(timeoutSec, TimeUnit.SECONDS)
-        .callTimeout(timeoutSec + 2L, TimeUnit.SECONDS)
-        .build()
+    /**
+     * OkHttp client whose SocketFactory performs SOCKS5 ATYP=0x03 (DOMAINNAME) through local Xray
+     * while bypassing device OS DNS completely so local ISP DNS poisoning never drops telemetry.
+     */
+    @VisibleForTesting
+    internal fun createRemoteDnsSocksClient(socksPort: Int, timeoutSec: Long = 5L): OkHttpClient {
+        val remoteOnlyDns = Dns { hostname ->
+            listOf(InetAddress.getByAddress(hostname, byteArrayOf(127, 0, 0, 1)))
+        }
+        val factory = object : SocketFactory() {
+            override fun createSocket(): Socket = Socks5TunnelSocket("127.0.0.1", socksPort)
+            override fun createSocket(host: String?, port: Int): Socket =
+                Socks5TunnelSocket("127.0.0.1", socksPort).apply {
+                    connect(InetSocketAddress(host.orEmpty(), port), (timeoutSec * 1000L).toInt())
+                }
+            override fun createSocket(host: String?, port: Int, localHost: InetAddress?, localPort: Int): Socket =
+                createSocket(host, port)
+            override fun createSocket(host: InetAddress?, port: Int): Socket =
+                Socks5TunnelSocket("127.0.0.1", socksPort).apply {
+                    connect(InetSocketAddress(host, port), (timeoutSec * 1000L).toInt())
+                }
+            override fun createSocket(address: InetAddress?, port: Int, localAddress: InetAddress?, localPort: Int): Socket =
+                createSocket(address, port)
+        }
+        return OkHttpClient.Builder()
+            .dns(remoteOnlyDns)
+            .proxy(Proxy.NO_PROXY)
+            .socketFactory(factory)
+            .connectTimeout(timeoutSec, TimeUnit.SECONDS)
+            .readTimeout(timeoutSec, TimeUnit.SECONDS)
+            .callTimeout(timeoutSec + 2L, TimeUnit.SECONDS)
+            .build()
+    }
+
+    private class Socks5TunnelSocket(
+        private val socksHost: String,
+        private val socksPort: Int,
+    ) : Socket() {
+        override fun connect(endpoint: SocketAddress) = connect(endpoint, 5000)
+
+        override fun connect(endpoint: SocketAddress, timeout: Int) {
+            val target = endpoint as? InetSocketAddress ?: throw IOException("Unsupported endpoint: $endpoint")
+            val host = target.address?.hostName?.takeIf { it.isNotBlank() } ?: target.hostString
+            val port = target.port
+            val effectiveTimeout = if (timeout > 0) timeout else 5000
+            super.connect(InetSocketAddress(socksHost, socksPort), effectiveTimeout)
+            soTimeout = effectiveTimeout
+            performSocks5Connect(this, host, port)
+        }
+    }
+
+    private fun readByteExact(input: InputStream): Int {
+        val b = input.read()
+        if (b < 0) throw IOException("Unexpected EOF during SOCKS5 handshake")
+        return b and 0xFF
+    }
+
+    private fun performSocks5Connect(socket: Socket, host: String, port: Int) {
+        val hostBytes = host.toByteArray(Charsets.UTF_8)
+        if (hostBytes.size > 255) throw IOException("Hostname too long for SOCKS5")
+        val out = socket.getOutputStream()
+        val input = socket.getInputStream()
+
+        out.write(byteArrayOf(0x05, 0x01, 0x00))
+        out.flush()
+        if (readByteExact(input) != 0x05 || readByteExact(input) != 0x00) {
+            throw IOException("SOCKS5 greeting rejected")
+        }
+
+        val req = ByteArray(4 + 1 + hostBytes.size + 2)
+        req[0] = 0x05
+        req[1] = 0x01
+        req[2] = 0x00
+        req[3] = 0x03
+        req[4] = hostBytes.size.toByte()
+        System.arraycopy(hostBytes, 0, req, 5, hostBytes.size)
+        req[req.size - 2] = (port shr 8).toByte()
+        req[req.size - 1] = (port and 0xFF).toByte()
+        out.write(req)
+        out.flush()
+
+        val ver = readByteExact(input)
+        val rep = readByteExact(input)
+        readByteExact(input) // RSV
+        val atyp = readByteExact(input)
+        if (ver != 0x05 || rep != 0x00) {
+            throw IOException("SOCKS5 connect failed code=$rep")
+        }
+        val skipBytes = when (atyp) {
+            0x01 -> 6
+            0x03 -> readByteExact(input) + 2
+            0x04 -> 18
+            else -> throw IOException("Unknown SOCKS5 ATYP=$atyp")
+        }
+        repeat(skipBytes) { readByteExact(input) }
+    }
 
     private val _isSelfConnected = MutableStateFlow(false)
     private val _serverOnlineFlow = MutableStateFlow(0L)
@@ -109,16 +210,51 @@ object HotaruCommunityCounter {
         synchronized(batchLock) {
             lastAccountedSessionBytes = 0L
         }
+        lastBeatSuccessWallMs.set(0L)
         updateTotalCount()
 
         heartbeatJob?.cancel()
         heartbeatJob = scope.launch {
-            sendBeatOnce(deltaSessionBytes = 0L, socksPort = socksPortProvider())
+            // Immediate beat on connect + fast warm-up retries so cold tunnels still register right away
+            if (!sendBeatOnce(deltaSessionBytes = 0L, socksPort = socksPortProvider())) {
+                delay(2_000L)
+                if (isActive && !sendBeatOnce(deltaSessionBytes = 0L, socksPort = socksPortProvider())) {
+                    delay(4_000L)
+                    if (isActive) {
+                        sendBeatOnce(deltaSessionBytes = 0L, socksPort = socksPortProvider())
+                    }
+                }
+            }
             while (isActive) {
                 delay(HEARTBEAT_INTERVAL_MS)
                 val totalSession = runCatching { NotificationManager.currentSessionTrafficBytes() }.getOrDefault(0L)
                 val delta = consumeSessionDelta(totalSession)
                 sendBeatOnce(deltaSessionBytes = delta, socksPort = socksPortProvider())
+            }
+        }
+    }
+
+    /**
+     * Triggered immediately when phone internet restores or screen wakes while VPN is active,
+     * ensuring the very first post-recovery telemetry pulse registers without waiting for the 60s loop.
+     */
+    fun onDaemonNetworkOrWakeRecovery(
+        socksPortProvider: () -> Int = { SettingsManager.getSocksPort() },
+        minGapMs: Long = 10_000L,
+    ) {
+        if (!_isSelfConnected.value) return
+        val now = System.currentTimeMillis()
+        val lastAttempt = lastPulseAttemptWallMs.get()
+        if (now - lastAttempt < minGapMs && lastBeatSuccessWallMs.get() >= lastAttempt) {
+            return
+        }
+        lastPulseAttemptWallMs.set(now)
+        scope.launch {
+            val totalSession = runCatching { NotificationManager.currentSessionTrafficBytes() }.getOrDefault(0L)
+            val delta = consumeSessionDelta(totalSession)
+            if (!sendBeatOnce(deltaSessionBytes = delta, socksPort = socksPortProvider())) {
+                delay(2_000L)
+                sendBeatOnce(deltaSessionBytes = 0L, socksPort = socksPortProvider())
             }
         }
     }
@@ -262,10 +398,10 @@ object HotaruCommunityCounter {
         return generated
     }
 
-    private fun sendBeatOnce(deltaSessionBytes: Long, socksPort: Int) {
+    private fun sendBeatOnce(deltaSessionBytes: Long, socksPort: Int): Boolean {
         val baseUrl = HotaruCrypto.getTelemetryUrl().trimEnd('/')
         val secret = HotaruCrypto.getTelemetrySecret()
-        if (baseUrl.isEmpty() || secret.isEmpty()) return
+        if (baseUrl.isEmpty() || secret.isEmpty()) return false
 
         val cid = getOrCreateClientId()
         val batch = prepareInflightBatch(deltaSessionBytes)
@@ -274,9 +410,12 @@ object HotaruCommunityCounter {
 
         val online = executePost("$baseUrl/v1/beat", json, sig, preferSocksPort = socksPort)
         if (online >= 0L) {
+            lastBeatSuccessWallMs.set(System.currentTimeMillis())
             ackInflightBatch(batch.seq)
             applyServerOnlineCount(online)
+            return true
         }
+        return false
     }
 
     private fun sendLeaveSync(finalDeltaBytes: Long, socksPort: Int) {
@@ -314,7 +453,7 @@ object HotaruCommunityCounter {
         val url = "$baseUrl/v1/stats?cid=$cid"
 
         val socksPort = if (useProxy) runCatching { SettingsManager.getSocksPort() }.getOrDefault(0) else 0
-        val clients = if (socksPort > 0) listOf(proxiedClient(socksPort), directClient) else listOf(directClient)
+        val clients = if (socksPort > 0) listOf(createRemoteDnsSocksClient(socksPort), directClient) else listOf(directClient)
         for (client in clients) {
             val online = runCatching {
                 val req = Request.Builder()
@@ -341,7 +480,7 @@ object HotaruCommunityCounter {
         socksTimeoutSec: Long = 5L,
     ): Long {
         val clients = if (preferSocksPort > 0) {
-            listOf(proxiedClient(preferSocksPort, socksTimeoutSec), directClient)
+            listOf(createRemoteDnsSocksClient(preferSocksPort, socksTimeoutSec), directClient)
         } else {
             listOf(directClient)
         }
