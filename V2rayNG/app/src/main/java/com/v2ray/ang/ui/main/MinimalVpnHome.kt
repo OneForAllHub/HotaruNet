@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -264,7 +265,7 @@ fun MinimalVpnHome(
     var savedUpdateVersion by rememberSaveable { mutableStateOf<String?>(null) }
     var savedUpdateNotes by rememberSaveable { mutableStateOf("") }
     var savedUpdateUrl by rememberSaveable { mutableStateOf<String?>(null) }
-    var updateDismissedAtMs by rememberSaveable { mutableLongStateOf(0L) }
+    var lastStoppedAtMs by rememberSaveable { mutableLongStateOf(0L) }
     var updateCheckCompleted by rememberSaveable { mutableStateOf(false) }
     var showFirstConnectDialog by rememberSaveable { mutableStateOf(false) }
 
@@ -281,18 +282,25 @@ fun MinimalVpnHome(
         }
     }
 
-    // Check GitHub releases on every app launch & whenever reopened from background (> 10s after dismiss).
+    // Check GitHub releases on fresh launch & when returning from background (> 15s), never interrupting About/Welcome dialogs.
     val lifecycleOwner = LocalLifecycleOwner.current
     val uiCoroutineScope = rememberCoroutineScope()
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_START) {
-                val now = android.os.SystemClock.elapsedRealtime()
-                if (savedUpdateVersion == null && (updateDismissedAtMs == 0L || now - updateDismissedAtMs > 10_000L)) {
-                    uiCoroutineScope.launch {
-                        applyUpdateResult(UpdateCheckerManager.checkForUpdateSilently())
+            when (event) {
+                Lifecycle.Event.ON_STOP -> {
+                    lastStoppedAtMs = android.os.SystemClock.elapsedRealtime()
+                }
+                Lifecycle.Event.ON_START -> {
+                    val now = android.os.SystemClock.elapsedRealtime()
+                    val shouldRecheck = lastStoppedAtMs == 0L || (now - lastStoppedAtMs > 15_000L)
+                    if (shouldRecheck && savedUpdateVersion == null && !showAboutDialog && !showFirstConnectDialog) {
+                        uiCoroutineScope.launch {
+                            applyUpdateResult(UpdateCheckerManager.checkForUpdateSilently())
+                        }
                     }
                 }
+                else -> Unit
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -340,12 +348,10 @@ fun MinimalVpnHome(
             releaseNotes = savedUpdateNotes,
             onToggleLanguage = onToggleLanguage,
             onDownloadClick = {
-                updateDismissedAtMs = android.os.SystemClock.elapsedRealtime()
                 savedUpdateVersion = null
                 onOpenUrl(releasesUrl)
             },
             onDismiss = {
-                updateDismissedAtMs = android.os.SystemClock.elapsedRealtime()
                 savedUpdateVersion = null
             },
         )
@@ -1736,7 +1742,8 @@ private fun HotaruUpdateDialog(
                     onClick = onDownloadClick,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(46.dp),
+                        .defaultMinSize(minHeight = 46.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = HotaruMint,
@@ -1744,7 +1751,9 @@ private fun HotaruUpdateDialog(
                     ),
                 ) {
                     Text(
-                        text = if (isPersian) "⬇️ رفتن به صفحه دانلود (GitHub)" else "⬇️ Open Download Page (Releases)",
+                        text = if (isPersian) "⬇️ رفتن به صفحه دانلود" else "⬇️ Open Download Page",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
                     )
                 }
@@ -1846,7 +1855,8 @@ private fun HotaruAboutDialog(
                     onClick = onOpenGitHub,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(44.dp),
+                        .defaultMinSize(minHeight = 46.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = WarmAmber,
@@ -1855,6 +1865,8 @@ private fun HotaruAboutDialog(
                 ) {
                     Text(
                         text = if (isPersian) "⭐ حمایت و ستاره در گیت‌هاب" else "⭐ Give a Star on GitHub",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
                     )
                 }
@@ -1863,12 +1875,15 @@ private fun HotaruAboutDialog(
                     onClick = onOpenTelegram,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(44.dp),
+                        .defaultMinSize(minHeight = 46.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
                     shape = RoundedCornerShape(14.dp),
                     border = BorderStroke(1.dp, TelegramBlue.copy(alpha = 0.65f)),
                 ) {
                     Text(
-                        text = if (isPersian) "📢 عضویت در کانال تلگرام @OneForAllHub" else "📢 Join Telegram @OneForAllHub",
+                        text = if (isPersian) "📢 کانال تلگرام @OneForAllHub" else "📢 Telegram @OneForAllHub",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.labelLarge.copy(
                             color = TelegramBlue,
                             fontWeight = FontWeight.Bold,
@@ -1963,7 +1978,8 @@ private fun HotaruFirstConnectDialog(
                     onClick = onOpenGitHub,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(44.dp),
+                        .defaultMinSize(minHeight = 46.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = WarmAmber,
@@ -1972,6 +1988,8 @@ private fun HotaruFirstConnectDialog(
                 ) {
                     Text(
                         text = if (isPersian) "⭐ حمایت با ستاره در گیت‌هاب" else "⭐ Star Project on GitHub",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
                     )
                 }
@@ -1980,12 +1998,15 @@ private fun HotaruFirstConnectDialog(
                     onClick = onOpenTelegram,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(44.dp),
+                        .defaultMinSize(minHeight = 46.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
                     shape = RoundedCornerShape(14.dp),
                     border = BorderStroke(1.dp, TelegramBlue.copy(alpha = 0.65f)),
                 ) {
                     Text(
-                        text = if (isPersian) "📢 عضویت در کانال تلگرام @OneForAllHub" else "📢 Join @OneForAllHub Telegram",
+                        text = if (isPersian) "📢 کانال تلگرام @OneForAllHub" else "📢 Telegram @OneForAllHub",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.labelLarge.copy(
                             color = TelegramBlue,
                             fontWeight = FontWeight.Bold,

@@ -23,7 +23,7 @@ data class V2rayConfig(
 ) {
 
     data class LogBean(
-        val access: String? = null,
+        var access: String? = null,
         val error: String? = null,
         var loglevel: String? = null,
         val dnsLog: Boolean? = null
