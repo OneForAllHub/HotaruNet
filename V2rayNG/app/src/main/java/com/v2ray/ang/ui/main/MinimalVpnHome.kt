@@ -282,7 +282,13 @@ fun MinimalVpnHome(
         }
     }
 
-    // Check GitHub releases on fresh launch & when returning from background (> 15s), never interrupting About/Welcome dialogs.
+    // Check GitHub releases on fresh launch, on resume after > 15s background, or if prior check was cancelled by language switch.
+    LaunchedEffect(Unit) {
+        if (!updateCheckCompleted && savedUpdateVersion == null) {
+            applyUpdateResult(UpdateCheckerManager.checkForUpdateSilently())
+        }
+    }
+
     val lifecycleOwner = LocalLifecycleOwner.current
     val uiCoroutineScope = rememberCoroutineScope()
     DisposableEffect(lifecycleOwner) {
@@ -293,8 +299,8 @@ fun MinimalVpnHome(
                 }
                 Lifecycle.Event.ON_START -> {
                     val now = android.os.SystemClock.elapsedRealtime()
-                    val shouldRecheck = lastStoppedAtMs == 0L || (now - lastStoppedAtMs > 15_000L)
-                    if (shouldRecheck && savedUpdateVersion == null && !showAboutDialog && !showFirstConnectDialog) {
+                    val resumedFromBg = lastStoppedAtMs > 0L && (now - lastStoppedAtMs > 15_000L)
+                    if (resumedFromBg && savedUpdateVersion == null && !showAboutDialog && !showFirstConnectDialog) {
                         uiCoroutineScope.launch {
                             applyUpdateResult(UpdateCheckerManager.checkForUpdateSilently())
                         }
