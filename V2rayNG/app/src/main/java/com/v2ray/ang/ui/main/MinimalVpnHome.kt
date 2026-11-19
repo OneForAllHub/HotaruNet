@@ -44,11 +44,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -63,14 +66,19 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.BuildConfig
@@ -86,6 +94,7 @@ import com.v2ray.ang.handler.HotaruWarpManager
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.UpdateCheckerManager
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.PI
@@ -252,45 +261,64 @@ fun MinimalVpnHome(
         mutableStateOf(!MmkvManager.decodeSettingsBool(AppConfig.PREF_FIRST_RUN_LANGUAGE_CHOSEN, false))
     }
     var showAboutDialog by rememberSaveable { mutableStateOf(false) }
-    var availableUpdate by remember { mutableStateOf<CheckUpdateResult?>(null) }
+    var savedUpdateVersion by rememberSaveable { mutableStateOf<String?>(null) }
+    var savedUpdateNotes by rememberSaveable { mutableStateOf("") }
+    var savedUpdateUrl by rememberSaveable { mutableStateOf<String?>(null) }
+    var updateDismissedAtMs by rememberSaveable { mutableLongStateOf(0L) }
     var updateCheckCompleted by rememberSaveable { mutableStateOf(false) }
     var showFirstConnectDialog by rememberSaveable { mutableStateOf(false) }
 
-    // Silent launch release check: only surfaces popup if a newer GitHub Release exists.
-    LaunchedEffect(Unit) {
-        val result = UpdateCheckerManager.checkForUpdateSilently()
+    val applyUpdateResult = { result: CheckUpdateResult ->
         if (result.checkedOk) {
             updateCheckCompleted = true
         }
-        if (result.hasUpdate) {
-            availableUpdate = result
+        if (result.hasUpdate && !result.latestVersion.isNullOrBlank()) {
+            savedUpdateVersion = result.latestVersion
+            savedUpdateNotes = result.releaseNotes.orEmpty()
+            savedUpdateUrl = result.releasePageUrl ?: repoUrl.concatUrl("releases/latest")
+        } else if (result.checkedOk) {
+            savedUpdateVersion = null
         }
+    }
+
+    // Check GitHub releases on every app launch & whenever reopened from background (> 10s after dismiss).
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val uiCoroutineScope = rememberCoroutineScope()
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_START) {
+                val now = android.os.SystemClock.elapsedRealtime()
+                if (savedUpdateVersion == null && (updateDismissedAtMs == 0L || now - updateDismissedAtMs > 10_000L)) {
+                    uiCoroutineScope.launch {
+                        applyUpdateResult(UpdateCheckerManager.checkForUpdateSilently())
+                    }
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     // Retry silently once after VPN connects if pre-VPN direct check could not reach GitHub.
     LaunchedEffect(isRunning) {
-        if (isRunning && !updateCheckCompleted && availableUpdate == null) {
+        if (isRunning && !updateCheckCompleted && savedUpdateVersion == null) {
             delay(1500L)
-            val result = UpdateCheckerManager.checkForUpdateSilently()
-            if (result.checkedOk) {
-                updateCheckCompleted = true
-            }
-            if (result.hasUpdate) {
-                availableUpdate = result
-            }
+            applyUpdateResult(UpdateCheckerManager.checkForUpdateSilently())
         }
     }
 
-    // One-time post-first-connect welcome & support dialog.
-    LaunchedEffect(isRunning, showLanguagePrompt, availableUpdate) {
+    // One-time post-first-connect welcome & support dialog (persists shown flag only once actually displayed).
+    LaunchedEffect(isRunning, showLanguagePrompt, savedUpdateVersion) {
         if (isRunning &&
             !showLanguagePrompt &&
-            availableUpdate == null &&
+            savedUpdateVersion == null &&
             !MmkvManager.decodeSettingsBool(AppConfig.PREF_FIRST_CONNECT_GUIDE_SHOWN, false)
         ) {
-            MmkvManager.encodeSettings(AppConfig.PREF_FIRST_CONNECT_GUIDE_SHOWN, true)
             delay(750L)
-            showFirstConnectDialog = true
+            if (isRunning && !showLanguagePrompt && savedUpdateVersion == null) {
+                MmkvManager.encodeSettings(AppConfig.PREF_FIRST_CONNECT_GUIDE_SHOWN, true)
+                showFirstConnectDialog = true
+            }
         }
     }
 
@@ -302,20 +330,24 @@ fun MinimalVpnHome(
                 showLanguagePrompt = false
             }
         )
-    } else if (availableUpdate != null) {
-        val update = availableUpdate!!
-        val releasesUrl = update.releasePageUrl ?: repoUrl.concatUrl("releases/latest")
+    } else if (savedUpdateVersion != null) {
+        val targetVer = savedUpdateVersion!!
+        val releasesUrl = savedUpdateUrl ?: repoUrl.concatUrl("releases/latest")
         HotaruUpdateDialog(
             isPersian = isPersian,
             currentVersion = BuildConfig.VERSION_NAME,
-            latestVersion = update.latestVersion.orEmpty(),
-            releaseNotes = update.releaseNotes.orEmpty(),
+            latestVersion = targetVer,
+            releaseNotes = savedUpdateNotes,
             onToggleLanguage = onToggleLanguage,
             onDownloadClick = {
-                availableUpdate = null
+                updateDismissedAtMs = android.os.SystemClock.elapsedRealtime()
+                savedUpdateVersion = null
                 onOpenUrl(releasesUrl)
             },
-            onDismiss = { availableUpdate = null },
+            onDismiss = {
+                updateDismissedAtMs = android.os.SystemClock.elapsedRealtime()
+                savedUpdateVersion = null
+            },
         )
     } else if (showFirstConnectDialog) {
         HotaruFirstConnectDialog(
@@ -591,14 +623,16 @@ private fun HotaruTopBar(
                         tint = TelegramBlue,
                         modifier = Modifier.size(15.dp),
                     )
-                    Text(
-                        text = "@OneForAllHub",
-                        maxLines = 1,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = Color.White.copy(alpha = 0.94f),
-                            fontWeight = FontWeight.SemiBold,
+                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                        Text(
+                            text = "@OneForAllHub",
+                            maxLines = 1,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = Color.White.copy(alpha = 0.94f),
+                                fontWeight = FontWeight.SemiBold,
+                            )
                         )
-                    )
+                    }
                 }
             }
 
@@ -1512,12 +1546,12 @@ private fun HotaruFooterActionsBar(
             color = WarmAmber.copy(alpha = 0.12f),
             border = BorderStroke(1.dp, WarmAmber.copy(alpha = 0.42f)),
             modifier = Modifier
-                .weight(0.85f)
+                .weight(0.95f)
                 .clip(RoundedCornerShape(16.dp))
                 .clickable(onClick = onOpenGitHub),
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
             ) {
@@ -1527,9 +1561,9 @@ private fun HotaruFooterActionsBar(
                     tint = WarmAmber,
                     modifier = Modifier.size(16.dp),
                 )
-                Spacer(modifier = Modifier.width(6.dp))
+                Spacer(modifier = Modifier.width(5.dp))
                 Text(
-                    text = if (isPersian) "ستاره در GitHub ⭐" else "Star on GitHub ⭐",
+                    text = if (isPersian) "ستاره گیت‌هاب ⭐" else "Star GitHub ⭐",
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.labelMedium.copy(
@@ -1644,36 +1678,45 @@ private fun HotaruUpdateDialog(
                     border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = "v$currentVersion",
-                            style = MaterialTheme.typography.labelLarge.copy(color = MutedText),
-                        )
-                        Text(
-                            text = "➔",
-                            style = MaterialTheme.typography.labelLarge.copy(color = NeonCyan),
-                        )
-                        Text(
-                            text = "v$latestVersion",
-                            style = MaterialTheme.typography.titleSmall.copy(
-                                color = HotaruMint,
-                                fontWeight = FontWeight.Bold,
-                            ),
-                        )
+                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = "v$currentVersion",
+                                style = MaterialTheme.typography.labelLarge.copy(color = MutedText),
+                            )
+                            Text(
+                                text = "➔",
+                                style = MaterialTheme.typography.labelLarge.copy(color = NeonCyan),
+                            )
+                            Text(
+                                text = "v$latestVersion",
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    color = HotaruMint,
+                                    fontWeight = FontWeight.Bold,
+                                ),
+                            )
+                        }
                     }
                 }
 
-                val summaryText = releaseNotes.trim().ifEmpty {
-                    if (isPersian) {
-                        "بهبود سرعت انتخاب خودکار، پایداری بیشتر اتصال و ارتقای امنیت هسته در نسخه جدید آماده دانلود است."
-                    } else {
-                        "Improved auto-pilot speed, connection stability, and core updates are ready on the GitHub Releases page."
+                val summaryText = remember(releaseNotes, isPersian) {
+                    val cleaned = releaseNotes
+                        .replace("**", "")
+                        .replace(Regex("""\[([^\]]+)\]\([^)]+\)"""), "$1")
+                        .replace(Regex("""(?m)^-\s+"""), "• ")
+                        .trim()
+                    cleaned.ifEmpty {
+                        if (isPersian) {
+                            "بهبود سرعت انتخاب خودکار، پایداری بیشتر اتصال و ارتقای امنیت هسته در نسخه جدید آماده دانلود است."
+                        } else {
+                            "Improved auto-pilot speed, connection stability, and core updates are ready on the GitHub Releases page."
+                        }
                     }
                 }
 
