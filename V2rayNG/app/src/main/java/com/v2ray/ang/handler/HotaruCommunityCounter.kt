@@ -30,7 +30,7 @@ import kotlin.math.max
  *
  * Replaces legacy static hit counters with HMAC-authenticated session heartbeats (60s cadence,
  * 180s server TTL, explicit /leave on disconnect) and idempotent delta-byte accounting via
- * Cloudflare Workers Durable Object SQLite. Endpoint URL and HMAC key live exclusively inside
+ * Supabase Edge Functions + PostgreSQL. Endpoint URL and HMAC key live exclusively inside
  * `libhotaruguard.so`.
  */
 object HotaruCommunityCounter {

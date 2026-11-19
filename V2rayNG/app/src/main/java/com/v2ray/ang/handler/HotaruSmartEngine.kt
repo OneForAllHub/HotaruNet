@@ -245,6 +245,7 @@ object HotaruSmartEngine {
 
     private const val SCAN_CACHE_TTL_MS = 10 * 60_000L
     private const val LIVE_HARVEST_INTERVAL_MS = 10 * 60_000L
+    private const val LIVE_HARVEST_HEALTHY_INTERVAL_MS = 30 * 60_000L
     private const val MAX_POOL_SERVERS = 450
     private const val STAGE1_CONCURRENCY = 32
     private const val STAGE1_TIMEOUT_MS = 1500
@@ -477,7 +478,8 @@ object HotaruSmartEngine {
             val now = System.currentTimeMillis()
             val lastHarvest = MmkvManager.decodeSettingsLong(KEY_LAST_HARVEST_MS, 0L)
             val existingCount = MmkvManager.decodeServerList(AppConfig.HOTARU_SUB_ID).size
-            if (!force && existingCount >= 20 && (now - lastHarvest) < LIVE_HARVEST_INTERVAL_MS) {
+            val harvestInterval = if (existingCount >= 40) LIVE_HARVEST_HEALTHY_INTERVAL_MS else LIVE_HARVEST_INTERVAL_MS
+            if (!force && existingCount >= 20 && (now - lastHarvest) < harvestInterval) {
                 return@withLock 0
             }
 

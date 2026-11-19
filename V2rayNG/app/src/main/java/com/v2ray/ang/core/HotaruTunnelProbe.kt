@@ -4,10 +4,7 @@ import com.v2ray.ang.AppConfig
 import com.v2ray.ang.util.LogUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.InputStream
@@ -15,6 +12,7 @@ import java.io.OutputStream
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URL
+import java.util.concurrent.atomic.AtomicInteger
 import javax.net.ssl.SSLSocketFactory
 
 /**
@@ -23,6 +21,9 @@ import javax.net.ssl.SSLSocketFactory
  * preventing local DNS poisoning from corrupting probe targets or triggering false failover.
  */
 internal object HotaruTunnelProbe {
+    private const val WATCHDOG_THROUGHPUT_BYTES = 32_768
+    private val connectivityCursor = AtomicInteger(0)
+
     data class Response(
         val code: Int = -1,
         val bytes: Int = 0,
@@ -32,31 +33,18 @@ internal object HotaruTunnelProbe {
     )
 
     suspend fun connectivity(port: Int): Response {
-        // Race two independent Anycast CDNs concurrently so a blackholed tunnel fails in ~4s instead of ~12s.
-        val primary = coroutineScope {
-            val deferreds = listOf(
-                async { request(port, "https://cp.cloudflare.com/generate_204", 0, payload = false, timeoutMs = 4000L) },
-                async { request(port, "https://www.gstatic.com/generate_204", 0, payload = false, timeoutMs = 4000L) },
-            ).toMutableList()
-            var lastResponse = Response()
-            while (deferreds.isNotEmpty()) {
-                val (winner, res) = select<Pair<kotlinx.coroutines.Deferred<Response>, Response>> {
-                    for (d in deferreds) {
-                        d.onAwait { value -> d to value }
-                    }
-                }
-                deferreds.remove(winner)
-                lastResponse = res
-                if (res.code == 204) {
-                    for (remaining in deferreds) remaining.cancel()
-                    return@coroutineScope res
-                }
-            }
-            lastResponse
-        }
-        if (primary.code == 204) return primary
-        // Only try third endpoint if one primary actually received an HTTP response (not a socket timeout/drop)
-        if (primary.code > 0) {
+        // Alternate single CDN check first so healthy tunnels avoid 2x parallel TLS overhead every 5s;
+        // fall back immediately to secondary + YouTube if the primary check fails.
+        val urls = listOf(
+            "https://cp.cloudflare.com/generate_204",
+            "https://www.gstatic.com/generate_204",
+        )
+        val firstIdx = (connectivityCursor.getAndIncrement() and 1)
+        val first = request(port, urls[firstIdx], 0, payload = false, timeoutMs = 3500L)
+        if (first.code == 204) return first
+        val second = request(port, urls[1 - firstIdx], 0, payload = false, timeoutMs = 3500L)
+        if (second.code == 204) return second
+        if (first.code > 0 || second.code > 0) {
             val yt = request(port, "https://www.youtube.com/generate_204", 0, payload = false, timeoutMs = 3500L)
             if (yt.code == 204) return yt
         }
@@ -66,11 +54,11 @@ internal object HotaruTunnelProbe {
     suspend fun throughput(port: Int): Response = withTimeoutOrNull(18_000L) {
         var last = Response()
         for (url in listOf(
-            "https://speed.cloudflare.com/__down?bytes=131072",
+            "https://speed.cloudflare.com/__down?bytes=$WATCHDOG_THROUGHPUT_BYTES",
             "https://cdn.jsdelivr.net/npm/axios@1.7.0/dist/axios.min.js",
             "https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js",
         )) {
-            last = request(port, url, 131_072, payload = true, timeoutMs = 8_000L)
+            last = request(port, url, WATCHDOG_THROUGHPUT_BYTES, payload = true, timeoutMs = 8_000L)
             if (last.validPayload) return@withTimeoutOrNull last
         }
         last
@@ -170,9 +158,10 @@ internal object HotaruTunnelProbe {
                     Pair(inStream, outStream)
                 }
 
-                // 5. Send HTTP request (measure payload throughput from GET write so cold SOCKS/TLS RTT does not skew 128 KiB rate)
+                // 5. Send HTTP request (measure payload throughput from GET write so cold SOCKS/TLS RTT does not skew 32 KiB rate)
                 val httpStartNs = System.nanoTime()
-                val httpReq = "GET $path HTTP/1.1\r\nHost: $host\r\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)\r\nAccept: */*\r\nConnection: close\r\n\r\n"
+                val rangeHdr = if (payload && maxBytes > 0) "Range: bytes=0-${maxBytes - 1}\r\n" else ""
+                val httpReq = "GET $path HTTP/1.1\r\nHost: $host\r\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)\r\n${rangeHdr}Accept: */*\r\nConnection: close\r\n\r\n"
                 finalOut.write(httpReq.toByteArray(Charsets.UTF_8))
                 finalOut.flush()
 
@@ -210,7 +199,7 @@ internal object HotaruTunnelProbe {
 
                 var bytes = 0
                 val bodyPrefix = StringBuilder()
-                if (statusCode == 200 && maxBytes > 0) {
+                if ((statusCode == 200 || statusCode == 206) && maxBytes > 0) {
                     val buffer = ByteArray(8192)
                     while (bytes < maxBytes) {
                         val count = finalIn.read(buffer, 0, minOf(buffer.size, maxBytes - bytes))

@@ -5,11 +5,11 @@ internal object HotaruHealthPolicy {
     const val FAST_BYTES_PER_SECOND = 64_000L
     const val MIN_PAYLOAD_BYTES = 8_192
     const val MEASUREMENT_TTL_MS = 5 * 60_000L
-    const val THROUGHPUT_INTERVAL_MS = 25_000L
+    const val THROUGHPUT_INTERVAL_MS = 35_000L
     const val SWITCH_COOLDOWN_MS = 30_000L
     const val DEAD_COOLDOWN_MS = 10_000L
     const val SLOW_COOLDOWN_MS = 20_000L
-    const val SEARCH_INTERVAL_MS = 10 * 60_000L
+    const val SEARCH_INTERVAL_MS = 60 * 60_000L
     const val MAX_SLOW_ROUTE_SWITCHES = 3
 
     const val MAX_HISTORY_SAMPLES = 5
@@ -88,7 +88,7 @@ internal object HotaruHealthPolicy {
             mime == "text/javascript" ||
             mime == "application/x-javascript" ||
             mime == "text/plain"
-        return code == 200 && bytes >= MIN_PAYLOAD_BYTES && expectedType &&
+        return (code == 200 || code == 206) && bytes >= MIN_PAYLOAD_BYTES && expectedType &&
             !prefix.trimStart().startsWith("<") && !isRestricted(code, null, prefix)
     }
 
