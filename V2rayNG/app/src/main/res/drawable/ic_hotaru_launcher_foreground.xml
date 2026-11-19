@@ -1,0 +1,80 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Cyber-Anime Hotaru Glow Aura -->
+    <path
+        android:fillColor="#1500F5D4"
+        android:pathData="M54,54m-34,0a34,34 0 1,1 68,0a34,34 0 1,1 -68,0" />
+
+    <!-- Outer Tech Orbit Ring -->
+    <path
+        android:strokeColor="#00E5FF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:pathData="M28,54 A26,26 0 0,1 54,28 A26,26 0 0,1 80,54" />
+    <path
+        android:strokeColor="#FF2A85"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:pathData="M80,54 A26,26 0 0,1 54,80 A26,26 0 0,1 28,54" />
+
+    <!-- Tech Orbit Notches -->
+    <path
+        android:strokeColor="#00F5D4"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M54,23 L54,27 M54,81 L54,85 M23,54 L27,54 M81,54 L85,54" />
+
+    <!-- Stylized Hotaru Cyber Wings (Upper Wings) -->
+    <!-- Left Wing -->
+    <path
+        android:fillColor="#80A855F7"
+        android:strokeColor="#00E5FF"
+        android:strokeWidth="1.6"
+        android:strokeLineJoin="round"
+        android:pathData="M54,48 C46,36 34,38 32,46 C30,54 44,58 54,55 Z" />
+    <!-- Right Wing -->
+    <path
+        android:fillColor="#80A855F7"
+        android:strokeColor="#00E5FF"
+        android:strokeWidth="1.6"
+        android:strokeLineJoin="round"
+        android:pathData="M54,48 C62,36 74,38 76,46 C78,54 64,58 54,55 Z" />
+
+    <!-- Stylized Hotaru Cyber Wings (Lower Tail Wings) -->
+    <path
+        android:fillColor="#60FF2A85"
+        android:strokeColor="#FF2A85"
+        android:strokeWidth="1.4"
+        android:strokeLineJoin="round"
+        android:pathData="M54,56 C47,60 40,68 45,72 C50,74 53,64 54,59 Z" />
+    <path
+        android:fillColor="#60FF2A85"
+        android:strokeColor="#FF2A85"
+        android:strokeWidth="1.4"
+        android:strokeLineJoin="round"
+        android:pathData="M54,56 C61,60 68,68 63,72 C58,74 55,64 54,59 Z" />
+
+    <!-- Firefly Cyber Core Body (Neon Lightning / Diamond) -->
+    <path
+        android:fillColor="#00F5D4"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.2"
+        android:strokeLineJoin="round"
+        android:pathData="M54,40 L58,52 L54,68 L50,52 Z" />
+
+    <!-- Bright Central Core Spark -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,50m-3,0a3,3 0 1,1 6,0a3,3 0 1,1 -6,0" />
+
+    <!-- Antennae / Data Traces -->
+    <path
+        android:strokeColor="#00E5FF"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M52,40 C48,34 42,32 38,33 M56,40 C60,34 66,32 70,33" />
+</vector>
