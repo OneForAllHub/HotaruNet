@@ -28,43 +28,59 @@
 
 ---
 
-## 📥 دانلود مستقیم آخرین نسخه (`v2.3.43`)
+## 📥 دانلود مستقیم آخرین نسخه (`v2.3.44`)
 
 HotaruNet به‌صورت کاملاً نیتیو هم برای **ویندوز (کامپیوتر و لپ‌تاپ)** و هم برای **اندروید (گوشی و تبلت)** در دسترس است — بدون نیاز به خرید اشتراک، وارد کردن دستی کانفیگ یا ساخت اکانت.
 
 ### 🪟 دانلود نسخه ویندوز (کامپیوتر و لپ‌تاپ)
 
-<div align="center">
-<img src="assets/screenshots/windows-home-en.png" alt="فیلترشکن ویندوز هوتارو نت – کلاینت رایگان VLESS REALITY برای ویندوز ۱۰ و ۱۱ با حالت System Proxy و Wintun TUN" width="300" />
-</div>
+<table align="center">
+  <thead>
+    <tr>
+      <th align="center">🪟 ویندوز — صفحه اصلی و انتخاب حالت</th>
+      <th align="center">🔌 ویندوز — حالت بدون پروکسی (فارسی)</th>
+      <th align="center">🇬🇧 Windows — No Proxy Local Ports</th>
+      <th align="center">🤖 ویندوز — اتصال رباتی ۴ مرحله‌ای</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="center"><img src="assets/screenshots/windows-home-en.png" alt="فیلترشکن ویندوز هوتارو نت v2.3.44 – انتخاب بین System Proxy، No Proxy و Wintun TUN" width="210" /></td>
+      <td align="center"><img src="assets/screenshots/windows-connected-noproxy-fa.png" alt="هوتارو نت ویندوز v2.3.44 متصل در حالت بدون پروکسی با نمایش آی‌پی و پورت کپی‌پذیر" width="210" /></td>
+      <td align="center"><img src="assets/screenshots/windows-connected-noproxy-en.png" alt="HotaruNet Windows v2.3.44 connected in No Proxy mode displaying SOCKS5 and HTTP ports" width="210" /></td>
+      <td align="center"><img src="assets/screenshots/windows-stage-robot-en.png" alt="نمایش ربات متحرک مراحل اتصال هوتارو نت ویندوز v2.3.44" width="210" /></td>
+    </tr>
+  </tbody>
+</table>
 
-کلاینت پرسرعت، کم‌حجم و بدون نیاز به نصب (Portable) با دو حالت اتصال: **پروکسی سیستم (System Proxy)** برای وب‌گردی آنی بدون نیاز به مجوز ادمین و **حالت TUN با درایور Wintun** برای تونل کل ترافیک سیستم (بازی‌ها، شبیه‌سازها، تلگرام دسکتاپ و خط فرمان).
+کلاینت پرسرعت، کم‌حجم و بدون نیاز به نصب (Portable) با **۳ حالت اتصال انعطاف‌پذیر**: **پروکسی سیستم (System Proxy)**، حالت جدید **بدون پروکسی (No Proxy)** (اجرای تونل محلی روی پورت آزاد خودکار با نمایش و کپی فوری `IP / SOCKS5 / HTTP` بدون دست‌زدن به تنظیمات ویندوز) و **حالت TUN با درایور Wintun** برای تونل کل ترافیک سیستم.
 
 | بسته دانلودی | سیستم‌عامل و معماری | حجم | مشخصات و کد اعتبارسنجی (SHA-256) |
 | --- | --- | --- | --- |
-| [**`HotaruNet_v2.3.43_windows_x64.zip`**](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **ویندوز ۱۰ و ۱۱ (۶۴ بیتی)** | ~۴۳.۸ مگابایت | **نسخه پرتابل و آماده اجرا** (شامل نرم‌افزار اصلی `HotaruNet.exe`، سرویس پیشرفته TUN، کتابخانه بهینه‌شده Xray-core و درایور رسمی Wintun).<br/>`SHA-256: F3D7B1963BFC336BC3000A783C4AABDCD830656AB800D27C3364A8362C4AC6B4` |
+| [**`HotaruNet_v2.3.44_windows_x64.zip`**](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_v2.3.44_windows_x64.zip) | **ویندوز ۱۰ و ۱۱ (۶۴ بیتی)** | **۴۵.۹ مگابایت** | **نسخه پرتابل و آماده اجرا** (شامل نرم‌افزار اصلی `HotaruNet.exe`، سرویس پیشرفته TUN، کتابخانه بهینه‌شده Xray-core و درایور رسمی Wintun).<br/>`SHA-256: 3A49F3C4DAC2B93F5E54672807430F525A7854F7C091F6869C0404C0A736EF11` |
 
 #### 🚀 راهنمای سریع استفاده در ویندوز:
-1. فایل [**`HotaruNet_v2.3.43_windows_x64.zip`**](https://github.com/OneForAllHub/HotaruNet/releases/latest) را دانلود و از حالت فشرده خارج (Extract) کنید.
+1. فایل [**`HotaruNet_v2.3.44_windows_x64.zip`**](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_v2.3.44_windows_x64.zip) را دانلود و از حالت فشرده خارج (Extract) کنید.
 2. روی فایل **`HotaruNet.exe`** کلیک کنید تا اجرا شود.
 3. حالت دلخواه را انتخاب کنید:
    - **System Proxy (پیش‌فرض):** بدون نیاز به دسترسی Administrator فوراً متصل می‌شود و پروکسی سیستم را تنظیم و هنگام خروج ریست می‌کند.
+   - **بدون پروکسی / No Proxy *(جدید در v2.3.44)*:** پروکسی ویندوز را تغییر نمی‌دهد؛ فقط سرویس محلی (`SOCKS5` و `HTTP` روی اولین پورت آزاد از `10808/10809`) را روشن کرده و آی‌پی و پورت را با دکمه کپی برای تنظیم دستی در مرورگر، تلگرام یا ابزارها نمایش می‌دهد.
    - **حالت TUN:** کارت شبکه مجازی امن ایجاد می‌کند تا کل ترافیک ویندوز از تونل رد شود. برای فعال‌سازی کافی است یک‌بار برنامه را با *Run as administrator* اجرا نمایید.
-4. دکمهٔ دایره‌ای **اتصال (CONNECT)** را بزنید تا هوش مصنوعی مسیر بهترین سرور را انتخاب کند!
+4. دکمهٔ دایره‌ای **اتصال (CONNECT)** را بزنید تا ربات هوشمند ۴ مرحله‌ای بهترین مسیر را قفل کند!
 
 ---
 
 ### 📱 دانلود مستقیم نسخه اندروید (APK)
 
-فایل‌های نصبی رسمی و امضاشده (APK) مستقیماً از [**صفحه Releases گیت‌هاب**](https://github.com/OneForAllHub/HotaruNet/releases/latest):
+فایل‌های نصبی رسمی و امضاشده (APK) مستقیماً از [**صفحه Releases گیت‌هاب (`v2.3.44`)**](https://github.com/OneForAllHub/HotaruNet/releases/latest):
 
 | نام فایل APK | پردازنده / دستگاه هدف | پیشنهاد برای چه گوشی‌هایی؟ |
 | --- | --- | --- |
-| [`HotaruNet_2.3.43_arm64-v8a.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **ARM64 (64 بیتی)** (~۲۶.۳ MB) | مناسب برای تمام گوشی‌های جدید سامسونگ، شیائومی و... (توصیه‌شده) |
-| [`HotaruNet_2.3.43_armeabi-v7a.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **ARMv7 (32 بیتی)** (~۲۶.۸ MB) | گوشی‌ها و تبلت‌های قدیمی‌تر |
-| [`HotaruNet_2.3.43_x86_64.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **x86_64** (~۲۷.۳ MB) | شبیه‌سازهای اندروید روی کامپیوتر و کروم‌بوک |
-| [`HotaruNet_2.3.43_x86.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **x86** (~۲۷.۸ MB) | شبیه‌سازهای ۳۲ بیتی |
-| [`HotaruNet_2.3.43_universal.apk`](https://github.com/OneForAllHub/HotaruNet/releases/latest) | **همه‌کاره (Universal)** (~۶۴.۲ MB) | قابل نصب روی تمام دستگاه‌ها بدون نیاز به دانستن مدل CPU |
+| [`HotaruNet_2.3.44_arm64-v8a.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_arm64-v8a.apk) | **ARM64 (64 بیتی)** (۲۸.۷ MB) | مناسب برای تمام گوشی‌های جدید سامسونگ، شیائومی و... (توصیه‌شده) |
+| [`HotaruNet_2.3.44_armeabi-v7a.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_armeabi-v7a.apk) | **ARMv7 (32 بیتی)** (۲۹.۲ MB) | گوشی‌ها و تبلت‌های قدیمی‌تر |
+| [`HotaruNet_2.3.44_x86_64.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_x86_64.apk) | **x86_64** (۲۹.۷ MB) | شبیه‌سازهای اندروید روی کامپیوتر و کروم‌بوک |
+| [`HotaruNet_2.3.44_x86.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_x86.apk) | **x86** (۳۰.۲ MB) | شبیه‌سازهای ۳۲ بیتی |
+| [`HotaruNet_2.3.44_universal.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_universal.apk) | **همه‌کاره (Universal)** (۶۶.۶ MB) | قابل نصب روی تمام دستگاه‌ها بدون نیاز به دانستن مدل CPU |
 
 > 💡 هش SHA-256 همهٔ فایل‌ها در صفحهٔ [Releases](https://github.com/OneForAllHub/HotaruNet/releases/latest) قرار دارد و روی اندروید ۷ تا ۱۵ (API 24–35) پشتیبانی می‌شود.
 
@@ -103,19 +119,23 @@ HotaruNet به‌صورت کاملاً نیتیو هم برای **ویندوز (
 </table>
 
 <details>
-<summary>🖼️ مشاهدهٔ تصاویر بخش درباره ما و حمایت (فارسی / English)</summary>
+<summary>🖼️ مشاهدهٔ تصاویر ربات ۴ مرحله‌ای اتصال و بخش درباره ما / ارتباط با سازنده (فارسی / English)</summary>
 <br />
 <table align="center">
   <thead>
     <tr>
-      <th align="center">🇮🇷 درباره ما و حمایت (فارسی)</th>
-      <th align="center">🇬🇧 درباره ما و حمایت (انگلیسی)</th>
+      <th align="center">🤖 مراحل اتصال رباتی (فارسی)</th>
+      <th align="center">🤖 مراحل اتصال رباتی (English)</th>
+      <th align="center">🇮🇷 درباره ما و ربات سازنده</th>
+      <th align="center">🇬🇧 درباره ما و پشتیبانی (English)</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td align="center"><img src="assets/screenshots/about-fa.png" alt="پنجره درباره ما هوتارو نت فارسی" width="240" /></td>
-      <td align="center"><img src="assets/screenshots/about-en.png" alt="پنجره درباره ما هوتارو نت انگلیسی" width="240" /></td>
+      <td align="center"><img src="assets/screenshots/android-stage-fa.png" alt="نمایش ربات متحرک مراحل اتصال در اندروید هوتارو نت v2.3.44 فارسی" width="210" /></td>
+      <td align="center"><img src="assets/screenshots/android-stage-en.png" alt="نمایش ربات متحرک مراحل اتصال در اندروید هوتارو نت v2.3.44 انگلیسی" width="210" /></td>
+      <td align="center"><img src="assets/screenshots/about-fa.png" alt="پنجره درباره ما و دکمه ارتباط با سازنده در هوتارو نت فارسی" width="210" /></td>
+      <td align="center"><img src="assets/screenshots/about-en.png" alt="پنجره درباره ما و دکمه ارتباط با سازنده در هوتارو نت انگلیسی" width="210" /></td>
     </tr>
   </tbody>
 </table>
@@ -127,19 +147,21 @@ HotaruNet به‌صورت کاملاً نیتیو هم برای **ویندوز (
 
 HotaruNet با رابط کاربری اختصاصی و موتور هوشمند **Auto-Pilot** برای عبور پایدار از محدودیت‌های شبکه و اختلالات شدید اینترنت ایران (همراه اول، ایرانسل، رایتل، مخابرات، شاتل، زیتل، آسیاتک و فیبر نوری) طراحی شده است:
 
-- **اتصال هوشمند تک‌کلیک بدون نیاز به کانفیگ:** نیازی به پیدا کردن کانفیگ روزانه یا وارد کردن لینک سابسکریپشن نیست؛ فقط دکمهٔ **اتصال** را بزنید تا برنامه با هوش مصنوعی و متناسب با اپراتور اینترنت شما بهترین کانکشن را فعال کند.
-- **سنجش سرعت واقعی دانلود به‌جای پینگ خام:** پاسخ خالی `HTTP 204` یا پینگ میلی‌ثانیه‌ای معیار خوبی برای سرعت نیست؛ هوتارو نت سرعت واقعی دانلود دیتای ۳۲ کیلوبایتی را می‌سنجد و سرورها را بر اساس سرعت دانلود پایدار (`Bps`) اولویت‌بندی می‌کند.
+- **اتصال هوشمند تک‌کلیک + مسابقه موازی میرورهای فید:** هنگام زدن دکمه اتصال، لیست سرورها از میرورهای موازی کلود به‌صورت آنی به‌روزرسانی می‌شود و ربات ۴ مرحله‌ای بهترین مسیر را روی اینترنت شما قفل می‌کند.
+- **سنجش سرعت واقعی دانلود + پایش هیبریدی ایران (`Globalping + check-host`):** پاسخ خالی `HTTP 204` معیار سرعت نیست؛ نودها پیش از انتشار در کلود از نظر سرعت بالای ۱ مگابایت، دسترسی اپراتورهای واقعی ایران (از جمله رایتل و مخابرات) و دانلود تست بدون سوگیری پینگ سنجیده می‌شوند.
+- **ربات متحرک ۴ مرحله‌ای و دکمهٔ مستقیم ارتباط با سازنده:** پیگیری لحظه‌ای مراحل Sync، پینگ، تست سرعت و قفل مسیر همراه با دکمهٔ انتقال مستقیم به ربات تلگرامی **[@OneForAllHubBot](https://t.me/OneForAllHubBot)** (با باز کردن مستقیم اپلیکیشن تلگرام روی ویندوز و اندروید).
 - **شیلد ۵گانه پروتکل‌های ضد‌فیلتر مدرن:**
   1. **`VLESS + REALITY`** (پورت 443 با شناسه واقعی و جریان Vision)
   2. **`Cloudflare WARP Dedicated`** (ثبت کلید WireGuard اختصاصی و IPهای Anycast تمیز)
   3. **`Hysteria 2`** (پروتکل QUIC / UDP ضد‌اختلال با کنترل ازدحام BBR)
   4. **`XHTTP / SplitHTTP`** (مبتنی بر HTTP/2 و HTTP/3 مقاوم در برابر مسدودسازی)
   5. **`WebSocket + TLS`** (پشتیبان از طریق شبکه توزیع محتوا CDN)
-- **دو حالت تونل‌سازی در ویندوز:**
+- **۳ حالت تونل‌سازی در ویندوز (`v2.3.44`):**
   - **پروکسی سیستم (System Proxy):** تنظیم سریع پروکسی مرورگر با قابلیت پاکسازی و بازیابی خودکار ریجستری ویندوز هنگام بستن برنامه.
+  - **بدون پروکسی (`No Proxy`):** روشن شدن سرویس محلی `SOCKS5` و `HTTP` روی پورت آزاد بدون دستکاری پروکسی ویندوز، مناسب برای مرورگر، تلگرام، ابزارهای برنامه‌نویسی و تنظیم دستی هر برنامه.
   - **کارت شبکه مجازی Wintun:** تونل‌سازی سراسری و فوق‌سریع در سطح هسته ویندوز برای تمام برنامه‌ها، بازی‌ها و ترمینال.
 - **نگهبان زنده کم‌مصرف (Watchdog) و سوییچ خودکار:** در طول اتصال با حداقل حجم مصرفی (تست ۳۲ کیلوبایت هر ۳۵ ثانیه) کیفیت مسیر پایش می‌شود و در صورت افت سرعت (زیر ۶۴ کیلوبایت بر ثانیه) یا قطعی، برنامه خودکار و بدون قطعی کاربر را به سرور پرسرعت بعدی منتقل می‌کند.
-- **بدون فیلتر ناعادلانه جغرافیایی:** سرورهای آمریکا، اروپا و آسیا صرفاً بر اساس سرعت و پایداری واقعی رقابت می‌کنند.
+- **بدون فیلتر ناعادلانه جغرافیایی:** سرورهای اروپا، آمریکا و آسیا بدون فیلتر مصنوعی یا جریمه تاخیر فراآتلانتیک صرفاً بر اساس پهنای‌باند و پایداری واقعی رقابت می‌کنند.
 
 ---
 
@@ -167,8 +189,8 @@ HotaruNet با رابط کاربری اختصاصی و موتور هوشمند *
 </details>
 
 <details>
-<summary><b>تفاوت حالت System Proxy با TUN Mode در ویندوز چیست؟</b></summary>
-<p>حالت پروکسی سیستم بدون نیاز به دسترسی ادمین بلافاصله مرورگرها و برنامه‌های سازگار با پروکسی سیستم را متصل می‌کند. حالت TUN یک کارت شبکه اختصاصی Wintun ایجاد کرده و کل ترافیک اینترنت کامپیوتر (از جمله بازی‌ها، ترمینال و سایر نرم‌افزارها) را از تونل رد می‌کند.</p>
+<summary><b>تفاوت حالت System Proxy، No Proxy و TUN Mode در ویندوز چیست؟</b></summary>
+<p>حالت <b>System Proxy</b> بدون نیاز به دسترسی ادمین بلافاصله مرورگرها و برنامه‌های سازگار با پروکسی سیستم را متصل می‌کند. حالت جدید <b>No Proxy</b> بدون تغییر در تنظیمات پروکسی ویندوز فقط سرویس محلی <code>SOCKS5</code> و <code>HTTP</code> را روی اولین پورت آزاد روشن می‌کند تا آی‌پی و پورت را در هر برنامه دلخواه تنظیم کنید. حالت <b>TUN</b> نیز یک کارت شبکه اختصاصی Wintun ایجاد کرده و کل ترافیک کامپیوتر (از جمله بازی‌ها و ترمینال) را از تونل رد می‌کند.</p>
 </details>
 
 <details>

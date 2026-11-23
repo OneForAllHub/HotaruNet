@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HotaruNet — فیلترشکن هوشمند و رایگان اندروید و ویندوز | Zero-Config VPN</title>
+  <meta name="description" content="HotaruNet (هوتارو نت) — کلاینت VPN متن‌باز، رایگان و بدون نیاز به کانفیگ برای اندروید و ویندوز ۱۰ و ۱۱ با پشتیبانی از VLESS REALITY، Hysteria 2، Cloudflare WARP، حالت بدون پروکسی (SOCKS5/HTTP)، ربات مراحل اتصال و سوییچ خودکار." />
+  <meta name="keywords" content="HotaruNet, هوتارو نت, فیلترشکن ویندوز, فیلترشکن اندروید, بدون پروکسی, No Proxy, SOCKS5, HTTP proxy, VLESS REALITY, Hysteria 2, Cloudflare WARP, Xray-core, anti-censorship VPN, free open source VPN" />
+  <meta name="theme-color" content="#070B14" />
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="canonical" href="https://oneforallhub.github.io/HotaruNet/" />
+
+  <!-- Open Graph / Telegram / Social Previews -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="HotaruNet — Autonomous Zero-Config VPN for Android & Windows" />
+  <meta property="og:description" content="Free, open-source (GPL-3.0) anti-censorship VPN client featuring VLESS REALITY, Cloudflare WARP, Hysteria 2, XHTTP, real bandwidth probing, and seamless auto-failover." />
+  <meta property="og:url" content="https://oneforallhub.github.io/HotaruNet/" />
+  <meta property="og:image" content="https://raw.githubusercontent.com/OneForAllHub/HotaruNet/main/assets/screenshots/windows-home-en.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="HotaruNet — Free Zero-Config Android & Windows VPN" />
+  <meta name="twitter:description" content="One-tap anti-censorship client powered by Xray-core, Wintun TUN, real throughput probing, and 5-protocol failover." />
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/OneForAllHub/HotaruNet/main/assets/screenshots/windows-home-en.png" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "HotaruNet",
+    "operatingSystem": "Android 7.0+, Windows 10, Windows 11",
+    "applicationCategory": "SecurityApplication",
+    "softwareVersion": "2.3.44",
+    "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+    "url": "https://github.com/OneForAllHub/HotaruNet",
+    "downloadUrl": "https://github.com/OneForAllHub/HotaruNet/releases/latest",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
+
+  <style>
+    :root {
+      --bg: #070B14;
+      --bg-elev: #0D1424;
+      --bg-card: rgba(15, 23, 42, 0.78);
+      --border: rgba(148, 163, 184, 0.16);
+      --border-glow: rgba(0, 245, 212, 0.38);
+      --text: #F1F5F9;
+      --muted: #94A3B8;
+      --cyan: #00F5D4;
+      --blue: #00E5FF;
+      --purple: #A855F7;
+      --pink: #EC4899;
+      --success: #22C55E;
+      --radius: 18px;
+      --shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.65);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Tahoma, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(900px 500px at 15% -10%, rgba(0, 245, 212, 0.12), transparent 65%),
+        radial-gradient(800px 500px at 88% 8%, rgba(168, 85, 247, 0.14), transparent 60%),
+        var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      overflow-x: hidden;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    .container { width: min(1140px, 92%); margin-inline: auto; }
+
+    /* Navbar */
+    .nav {
+      position: sticky; top: 0; z-index: 40;
+      backdrop-filter: blur(14px);
+      background: rgba(7, 11, 20, 0.82);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 14px; padding: 12px 0;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.15rem; letter-spacing: .2px; }
+    .brand img { width: 38px; height: 38px; border-radius: 10px; box-shadow: 0 0 18px rgba(0, 245, 212, 0.3); }
+    .nav-links { display: flex; align-items: center; gap: 20px; color: var(--muted); font-size: 0.94rem; }
+    .nav-links a:hover { color: var(--cyan); }
+    .nav-actions { display: flex; align-items: center; gap: 10px; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 10px 16px; border-radius: 12px; font-weight: 700; font-size: 0.92rem;
+      border: 1px solid var(--border); background: var(--bg-elev); color: var(--text);
+      cursor: pointer; transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+    }
+    .btn:hover { transform: translateY(-1px); border-color: var(--border-glow); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+      color: #04121B; border: none;
+      box-shadow: 0 10px 28px -8px rgba(0, 245, 212, 0.55);
+    }
+    .btn-secondary {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.22), rgba(0, 229, 255, 0.14));
+      border-color: rgba(168, 85, 247, 0.45);
+    }
+    .btn-lang {
+      padding: 8px 13px; border-radius: 10px; font-size: 0.85rem;
+      border-color: rgba(0, 245, 212, 0.35); color: var(--cyan);
+    }
+
+    /* Hero */
+    .hero { padding: 54px 0 36px; }
+    .hero-grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 36px; align-items: center; }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 999px; font-size: 0.82rem; font-weight: 600;
+      background: rgba(0, 245, 212, 0.1); border: 1px solid rgba(0, 245, 212, 0.28); color: var(--cyan);
+    }
+    .pill-purple {
+      background: rgba(168, 85, 247, 0.13); border-color: rgba(168, 85, 247, 0.35); color: #D8B4FE;
+    }
+    h1 {
+      margin: 0 0 14px; font-size: clamp(1.9rem, 3.6vw, 2.9rem); line-height: 1.24; font-weight: 900;
+      background: linear-gradient(135deg, #FFFFFF 20%, var(--cyan) 75%, #C084FC 100%);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .hero-sub { color: var(--muted); font-size: 1.05rem; margin: 0 0 24px; max-width: 60ch; }
+    .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+    .cta-row .btn { padding: 13px 20px; font-size: 0.98rem; }
+
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; color: var(--muted); font-size: 0.88rem; }
+    .obtainium-link img { height: 42px; width: auto; border-radius: 8px; transition: transform .15s ease; }
+    .obtainium-link:hover img { transform: scale(1.03); }
+
+    .hero-visual {
+      position: relative;
+      background: linear-gradient(160deg, rgba(0, 245, 212, 0.12), rgba(168, 85, 247, 0.12));
+      border: 1px solid var(--border);
+      border-radius: 24px; padding: 20px; box-shadow: var(--shadow);
+    }
+    .hero-shots { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: center; }
+    .hero-shots img {
+      border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 12px 26px rgba(0, 0, 0, 0.45); cursor: zoom-in;
+    }
+    .stats-bar {
+      margin-top: 14px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+      text-align: center; background: rgba(7, 11, 20, 0.72); border: 1px solid var(--border);
+      border-radius: 14px; padding: 10px;
+    }
+    .stats-bar strong { display: block; color: var(--cyan); font-size: 1.05rem; }
+    .stats-bar span { font-size: 0.78rem; color: var(--muted); }
+
+    /* Sections */
+    section { padding: 42px 0; }
+    .section-head { margin-bottom: 24px; }
+    .section-head h2 { margin: 0 0 6px; font-size: clamp(1.4rem, 2.5vw, 1.95rem); font-weight: 800; }
+    .section-head p { margin: 0; color: var(--muted); }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .grid-5 { display: grid; grid-template-columns: repeat(auto-fit, minmax(195px, 1fr)); gap: 14px; }
+
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .card h3 { margin: 0 0 8px; font-size: 1.15rem; display: flex; align-items: center; gap: 8px; }
+    .card p { margin: 0 0 14px; color: var(--muted); font-size: 0.94rem; }
+
+    .dl-list { display: flex; flex-direction: column; gap: 10px; }
+    .dl-item {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 12px 14px; border-radius: 12px; background: rgba(7, 11, 20, 0.65);
+      border: 1px solid var(--border); transition: border-color .15s ease;
+    }
+    .dl-item:hover { border-color: var(--border-glow); }
+    .dl-info strong { display: block; font-size: 0.95rem; }
+    .dl-info span { font-size: 0.8rem; color: var(--muted); }
+
+    .badge-rec {
+      display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.72rem;
+      background: rgba(34, 197, 94, 0.16); color: #86EFAC; border: 1px solid rgba(34, 197, 94, 0.35);
+      margin-inline-start: 6px;
+    }
+
+    .steps { margin: 14px 0 0; padding-inline-start: 20px; color: var(--muted); font-size: 0.9rem; }
+    .steps li { margin-bottom: 6px; }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.86em; padding: 2px 6px; border-radius: 6px;
+      background: rgba(148, 163, 184, 0.14); color: var(--cyan);
+      direction: ltr; unicode-bidi: embed;
+    }
+
+    /* Protocols */
+    .proto-card { padding: 18px; border-radius: 16px; background: var(--bg-card); border: 1px solid var(--border); }
+    .proto-num {
+      display: inline-flex; width: 28px; height: 28px; border-radius: 8px; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 0.85rem; margin-bottom: 10px;
+      background: rgba(0, 245, 212, 0.14); color: var(--cyan); border: 1px solid rgba(0, 245, 212, 0.35);
+    }
+    .proto-card h4 { margin: 0 0 6px; font-size: 1rem; }
+    .proto-card p { margin: 0; color: var(--muted); font-size: 0.86rem; }
+
+    /* Screenshots */
+    .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 14px; }
+    .shot-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 10px; text-align: center; transition: transform .15s ease, border-color .15s ease;
+    }
+    .shot-card:hover { transform: translateY(-3px); border-color: var(--border-glow); }
+    .shot-card img { border-radius: 10px; width: 100%; aspect-ratio: 9 / 19; object-fit: cover; cursor: zoom-in; }
+    .shot-card.wide img { aspect-ratio: 16 / 10; object-fit: contain; background: #050811; }
+    .shot-card span { display: block; margin-top: 8px; font-size: 0.83rem; color: var(--muted); }
+
+    /* Checksums */
+    details {
+      margin-top: 18px; background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px 18px;
+    }
+    summary { cursor: pointer; font-weight: 700; color: var(--cyan); }
+    .hash-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.82rem; }
+    .hash-table th, .hash-table td {
+      text-align: start; padding: 8px 10px; border-bottom: 1px solid var(--border);
+    }
+    .hash-val { font-family: ui-monospace, monospace; word-break: break-all; color: #CBD5E1; direction: ltr; }
+
+    /* Share Box */
+    .share-box {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px;
+      background: linear-gradient(135deg, rgba(0, 245, 212, 0.08), rgba(168, 85, 247, 0.12));
+      border: 1px solid rgba(0, 245, 212, 0.3); border-radius: 20px; padding: 24px;
+    }
+
+    footer {
+      border-top: 1px solid var(--border); padding: 28px 0 40px;
+      color: var(--muted); font-size: 0.88rem; text-align: center;
+    }
+    .footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; margin-bottom: 10px; }
+    .footer-links a:hover { color: var(--cyan); }
+
+    /* Lightbox */
+    .lightbox {
+      position: fixed; inset: 0; background: rgba(3, 6, 14, 0.9); z-index: 90;
+      display: none; align-items: center; justify-content: center; padding: 20px;
+    }
+    .lightbox.open { display: flex; }
+    .lightbox img { max-height: 90vh; max-width: 94vw; border-radius: 14px; border: 1px solid var(--border-glow); }
+
+    @media (max-width: 880px) {
+      .hero-grid, .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="container nav-inner">
+      <a href="#top" class="brand">
+        <img src="assets/logo.png" alt="HotaruNet Logo" />
+        <span>HotaruNet</span>
+      </a>
+      <nav class="nav-links">
+        <a href="#downloads" data-i18n="nav_downloads">دانلود</a>
+        <a href="#engine" data-i18n="nav_engine">موتور هوشمند</a>
+        <a href="#screenshots" data-i18n="nav_shots">تصاویر</a>
+        <a href="#security" data-i18n="nav_security">امنیت و اشتراک</a>
+      </nav>
+      <div class="nav-actions">
+        <button id="langToggle" class="btn btn-lang" type="button">EN / فارسی</button>
+        <a class="btn" href="https://github.com/OneForAllHub/HotaruNet" target="_blank" rel="noopener">GitHub</a>
+        <a class="btn btn-primary" href="https://t.me/OneForAllHub" target="_blank" rel="noopener" data-i18n="nav_tg">تلگرام</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top" class="container">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-grid">
+        <div>
+          <div class="pill-row">
+            <span class="pill" id="verBadge">⚡ v2.3.44</span>
+            <span class="pill pill-purple" data-i18n="pill_oss">متن‌باز GPL-3.0 • رایگان و بدون تبلیغ</span>
+          </div>
+          <h1 data-i18n="hero_title">فیلترشکن هوشمند و بدون نیاز به کانفیگ برای اندروید و ویندوز</h1>
+          <p class="hero-sub" data-i18n="hero_sub">
+            فقط دکمه اتصال را بزنید! HotaruNet به‌جای پینگ‌های گول‌زننده HTTP 204، سرعت واقعی دانلود را می‌سنجد و بین ۵ پروتکل مدرن ضد‌فیلتر (VLESS REALITY، WARP، Hysteria 2، XHTTP و WS+TLS) بهترین مسیر را روی اینترنت شما پیدا و پایش می‌کند.
+          </p>
+          <div class="cta-row">
+            <a id="heroAndroidBtn" class="btn btn-primary" href="https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_arm64-v8a.apk" data-i18n="cta_android">📥 دانلود اندروید (APK)</a>
+            <a id="heroWinBtn" class="btn btn-secondary" href="https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_v2.3.44_windows_x64.zip" data-i18n="cta_windows">🪟 دانلود ویندوز ۱۰ و ۱۱</a>
+            <a class="btn" href="https://t.me/OneForAllHub" target="_blank" rel="noopener" data-i18n="cta_tg">📣 کانال تلگرام @OneForAllHub</a>
+          </div>
+          <div class="hero-meta">
+            <a class="obtainium-link" href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22com.hotarunet.client%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2FOneForAllHub%2FHotaruNet%22%2C%22author%22%3A%22OneForAllHub%22%2C%22name%22%3A%22HotaruNet%22%7D" target="_blank" rel="noopener" title="Add HotaruNet to Obtainium">
+              <img src="assets/badge_obtainium.png" alt="Get it on Obtainium" />
+            </a>
+            <span data-i18n="hero_meta">بدون ساخت اکانت • دوزبانه فارسی / English • بررسی خودکار آپدیت</span>
+          </div>
+        </div>
+
+        <div class="hero-visual">
+          <div class="hero-shots">
+            <img src="assets/screenshots/connected-fa.png" alt="HotaruNet Android Connected" data-zoom />
+            <img src="assets/screenshots/windows-home-en.png" alt="HotaruNet Windows Client" data-zoom />
+          </div>
+          <div class="stats-bar">
+            <div>
+              <strong>5</strong>
+              <span data-i18n="stat_proto">پروتکل ضد‌سانسور</span>
+            </div>
+            <div>
+              <strong>Zero-Config</strong>
+              <span data-i18n="stat_cfg">بدون سابسکریپشن دستی</span>
+            </div>
+            <div>
+              <strong>Android + Win</strong>
+              <span data-i18n="stat_plat">نسخه بومی دو پلتفرم</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Downloads -->
+    <section id="downloads">
+      <div class="section-head">
+        <h2 data-i18n="dl_title">دانلود مستقیم آخرین نسخه</h2>
+        <p data-i18n="dl_sub">فایل‌های رسمی مستقیماً از GitHub Releases دریافت می‌شوند و دارای اعتبارسنجی SHA-256 هستند.</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3><span>📱</span> <span data-i18n="dl_and_title">اندروید ۷ تا ۱۵ (APK)</span></h3>
+          <p data-i18n="dl_and_desc">ساخته‌شده با Jetpack Compose و Xray-core. اگر مدل پردازنده گوشی خود را نمی‌دانید، نسخه Universal را نصب کنید.</p>
+          <div class="dl-list" id="androidDownloads">
+            <a class="dl-item" data-asset="arm64-v8a" href="https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_arm64-v8a.apk">
+              <div class="dl-info">
+                <strong>ARM64 (arm64-v8a) <span class="badge-rec" data-i18n="rec">توصیه‌شده</span></strong>
+                <span data-i18n="abi_arm64">مناسب اکثر گوشی‌های جدید (28.7 MB)</span>
+              </div>
+              <span class="btn btn-primary">APK</span>
+            </a>
+            <a class="dl-item" data-asset="universal" href="https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_universal.apk">
+              <div class="dl-info">
+                <strong data-i18n="abi_uni_title">همه‌کاره (Universal APK)</strong>
+                <span data-i18n="abi_uni">قابل نصب روی همه گوشی‌ها و تبلت‌ها (66.6 MB)</span>
+              </div>
+              <span class="btn">APK</span>
+            </a>
+            <a class="dl-item" data-asset="armeabi-v7a" href="https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_armeabi-v7a.apk">
+              <div class="dl-info">
+                <strong>ARMv7 (32-bit)</strong>
+                <span data-i18n="abi_v7">گوشی‌های قدیمی‌تر (29.2 MB)</span>
+              </div>
+              <span class="btn">APK</span>
+            </a>
+            <a class="dl-item" data-asset="x86_64" href="https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_x86_64.apk">
+              <div class="dl-info">
+                <strong>x86_64</strong>
+                <span data-i18n="abi_x64">شبیه‌سازهای اندروید و کروم‌بوک (29.7 MB)</span>
+              </div>
+              <span class="btn">APK</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3><span>🪟</span> <span data-i18n="dl_win_title">ویندوز ۱۰ و ۱۱ (۶۴ بیتی - پرتابل)</span></h3>
+          <p data-i18n="dl_win_desc">مبتنی بر Tauri 2 و Xray-core بدون نیاز به نصب. شامل ۳ حالت System Proxy، بدون پروکسی (No Proxy) و درایور رسمی Wintun TUN.</p>
+          <div class="dl-list">
+            <a class="dl-item" data-asset="windows_x64" href="https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_v2.3.44_windows_x64.zip">
+              <div class="dl-info">
+                <strong>HotaruNet_v2.3.44_windows_x64.zip <span class="badge-rec">Portable</span></strong>
+                <span data-i18n="win_size">شامل HotaruNet.exe، سرویس TUN و درایور Wintun (45.9 MB)</span>
+              </div>
+              <span class="btn btn-primary">ZIP</span>
+            </a>
+          </div>
+          <ol class="steps" data-i18n-html="win_steps">
+            <li>فایل ZIP را در یک پوشه Extract کنید و <code>HotaruNet.exe</code> را اجرا نمایید.</li>
+            <li>حالت <strong>System Proxy</strong> بدون دسترسی ادمین فوراً کار می‌کند؛ حالت <strong>No Proxy</strong> نیز فقط پورت محلی <code>SOCKS5 / HTTP</code> را با دکمه کپی فعال می‌کند.</li>
+            <li>برای تونل کل سیستم (بازی، ترمینال و تلگرام) با <em>Run as administrator</em> اجرا و حالت <strong>TUN</strong> را فعال کنید.</li>
+          </ol>
+        </div>
+      </div>
+
+      <details>
+        <summary data-i18n="hash_summary">🔐 مشاهده کدهای اعتبارسنجی SHA-256 (نسخه v2.3.44)</summary>
+        <div style="overflow-x:auto;">
+          <table class="hash-table">
+            <thead>
+              <tr>
+                <th data-i18n="th_file">فایل</th>
+                <th>SHA-256</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>HotaruNet_v2.3.44_windows_x64.zip</code></td>
+                <td class="hash-val">3A49F3C4DAC2B93F5E54672807430F525A7854F7C091F6869C0404C0A736EF11</td>
+              </tr>
+              <tr>
+                <td><code>HotaruNet_2.3.44_arm64-v8a.apk</code></td>
+                <td class="hash-val">03B932BEF265BFC112B8D8B0B4268F21490C7552C20B4F308C16D96D71F4A96D</td>
+              </tr>
+              <tr>
+                <td><code>HotaruNet_2.3.44_universal.apk</code></td>
+                <td class="hash-val">3C78CEB9DAC2D55235CF42D7EAE07EAF15B886AA262A57E4CD75BEA7B6FCFB66</td>
+              </tr>
+              <tr>
+                <td><code>HotaruNet_2.3.44_armeabi-v7a.apk</code></td>
+                <td class="hash-val">599C15C53ABFBC1FCE9206C73904D8933F8F3E84E187C138F244D88D8249904F</td>
+              </tr>
+              <tr>
+                <td><code>HotaruNet_2.3.44_x86_64.apk</code></td>
+                <td class="hash-val">75D8BEF708BB212F97BEDCF33BBD892451BC2DE7A4954652E917E805F09D4F6D</td>
+              </tr>
+              <tr>
+                <td><code>HotaruNet_2.3.44_x86.apk</code></td>
+                <td class="hash-val">BF6E2876D9908AE8233529D958CD103C5A3637E4D274A4E45B3D1F0216F5F421</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+
+    <!-- Engine & Protocols -->
+    <section id="engine">
+      <div class="section-head">
+        <h2 data-i18n="eng_title">چرا HotaruNet روی اینترنت‌های محدود پایدار است؟</h2>
+        <p data-i18n="eng_sub">موتور Auto-Pilot به‌صورت خودکار با شرایط اپراتورهای همراه و ثابت (همراه اول، ایرانسل، شاتل، مخابرات و...) سازگار می‌شود.</p>
+      </div>
+
+      <div class="grid-3" style="margin-bottom:20px;">
+        <div class="card">
+          <h3><span>🚀</span> <span data-i18n="f1_t">تست سرعت واقعی دانلود</span></h3>
+          <p data-i18n="f1_d">پاسخ خالی HTTP 204 ملاک سرعت نیست. هوتارو نت سرعت واقعی دریافت پکیج ۳۲ کیلوبایتی را می‌سنجد و سرورهای واقعی پرسرعت را انتخاب می‌کند.</p>
+        </div>
+        <div class="card">
+          <h3><span>🛡️</span> <span data-i18n="f2_t">نگهبان زنده و سوییچ خودکار</span></h3>
+          <p data-i18n="f2_d">هر ۳۵ ثانیه با مصرف ناچیز (۳۲ کیلوبایت) مسیر پایش می‌شود و اگر سرعت به زیر ۶۴ KB/s افت کند، بدون قطعی به مسیر سریع‌تر منتقل می‌شوید.</p>
+        </div>
+        <div class="card">
+          <h3><span>🌍</span> <span data-i18n="f3_t">بدون محدودیت جغرافیایی</span></h3>
+          <p data-i18n="f3_d">سرورهای اروپا، آمریکا و آسیا بدون فیلتر مصنوعی و صرفاً بر اساس پهنای‌باند و پایداری واقعی با هم رقابت می‌کنند.</p>
+        </div>
+      </div>
+
+      <div class="grid-5">
+        <div class="proto-card">
+          <div class="proto-num">1</div>
+          <h4>VLESS + REALITY</h4>
+          <p data-i18n="p1">پورت 443 با XTLS Vision و شبیه‌سازی کامل ترافیک TLS واقعی</p>
+        </div>
+        <div class="proto-card">
+          <div class="proto-num">2</div>
+          <h4>Cloudflare WARP</h4>
+          <p data-i18n="p2">ثبت کلید اختصاصی WireGuard در هر دستگاه روی IPهای تمیز Anycast</p>
+        </div>
+        <div class="proto-card">
+          <div class="proto-num">3</div>
+          <h4>Hysteria 2</h4>
+          <p data-i18n="p3">مبتنی بر QUIC / UDP با کنترل ازدحام بهینه برای عبور از Packet Loss</p>
+        </div>
+        <div class="proto-card">
+          <div class="proto-num">4</div>
+          <h4>XHTTP / SplitHTTP</h4>
+          <p data-i18n="p4">ترنسپورت مقاوم HTTP/2 و HTTP/3 سازگار با CDNها</p>
+        </div>
+        <div class="proto-card">
+          <div class="proto-num">5</div>
+          <h4>WebSocket + TLS</h4>
+          <p data-i18n="p5">مسیر پشتیبان از طریق Reverse Proxy برای شبکه‌های سخت‌گیر</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screenshots -->
+    <section id="screenshots">
+      <div class="section-head">
+        <h2 data-i18n="shots_title">محیط کاربری دوزبانه (فارسی RTL و English)</h2>
+        <p data-i18n="shots_sub">برای بزرگ‌نمایی روی هر تصویر کلیک کنید.</p>
+      </div>
+      <div class="gallery">
+        <div class="shot-card">
+          <img src="assets/screenshots/connected-fa.png" alt="Connected Persian UI" data-zoom />
+          <span data-i18n="s1">اندروید — متصل (فارسی)</span>
+        </div>
+        <div class="shot-card">
+          <img src="assets/screenshots/home-fa.png" alt="Home Persian UI" data-zoom />
+          <span data-i18n="s2">اندروید — صفحه اصلی (فارسی)</span>
+        </div>
+        <div class="shot-card">
+          <img src="assets/screenshots/connected-en.png" alt="Connected English UI" data-zoom />
+          <span data-i18n="s3">اندروید — متصل (English)</span>
+        </div>
+        <div class="shot-card">
+          <img src="assets/screenshots/home-en.png" alt="Home English UI" data-zoom />
+          <span data-i18n="s4">اندروید — صفحه اصلی (English)</span>
+        </div>
+        <div class="shot-card wide">
+          <img src="assets/screenshots/windows-home-en.png" alt="Windows Desktop UI" data-zoom />
+          <span data-i18n="s5">ویندوز ۱۰ و ۱۱ — صفحه اصلی و انتخاب حالت</span>
+        </div>
+        <div class="shot-card wide">
+          <img src="assets/screenshots/windows-connected-noproxy-fa.png" alt="Windows No Proxy Local Ports UI" data-zoom />
+          <span data-i18n="s6">ویندوز — حالت No Proxy با پورت SOCKS5 / HTTP</span>
+        </div>
+        <div class="shot-card">
+          <img src="assets/screenshots/android-stage-fa.png" alt="Android 4-Stage Robot Animation" data-zoom />
+          <span data-i18n="s7">اندروید — ربات ۴ مرحله‌ای اتصال</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Security & Share -->
+    <section id="security">
+      <div class="share-box">
+        <div>
+          <h2 style="margin:0 0 6px;" data-i18n="share_title">حریم خصوصی صفر-لاگ و همرسانی با دوستان</h2>
+          <p style="margin:0; color:var(--muted); max-width:60ch;" data-i18n="share_desc">
+            HotaruNet هیچ تاریخچه وب‌گردی، درخواست DNS یا IP کاربر را ذخیره نمی‌کند. اگر برای شما مفید بود، با یک ستاره در گیت‌هاب یا ارسال این صفحه به دوستانتان از دسترسی آزاد به اینترنت حمایت کنید.
+          </p>
+        </div>
+        <div class="cta-row" style="margin:0;">
+          <button id="copyShareBtn" class="btn btn-primary" type="button" data-i18n="copy_link">🔗 کپی لینک صفحه</button>
+          <a class="btn btn-secondary" href="https://t.me/share/url?url=https%3A%2F%2Foneforallhub.github.io%2FHotaruNet%2F&text=HotaruNet%20%E2%80%94%20Free%20Zero-Config%20Android%20%26%20Windows%20VPN" target="_blank" rel="noopener" data-i18n="share_tg">ارسال در تلگرام</a>
+          <a class="btn" href="https://github.com/OneForAllHub/HotaruNet/blob/main/PRIVACY.fa.md" target="_blank" rel="noopener" data-i18n="privacy_link">سیاست حریم خصوصی</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-links">
+        <a href="https://github.com/OneForAllHub/HotaruNet" target="_blank" rel="noopener">GitHub Repository</a>
+        <a href="https://github.com/OneForAllHub/HotaruNet/releases/latest" target="_blank" rel="noopener">Releases</a>
+        <a href="https://github.com/OneForAllHub/HotaruNet/issues" target="_blank" rel="noopener">Issues</a>
+        <a href="https://github.com/OneForAllHub/HotaruNet/blob/main/ARCHITECTURE.md" target="_blank" rel="noopener">Architecture</a>
+        <a href="https://t.me/OneForAllHub" target="_blank" rel="noopener">Telegram @OneForAllHub</a>
+      </div>
+      <div data-i18n="footer_copy">منتشر شده تحت مجوز آزاد GPL-3.0 • ساخته شده با Jetpack Compose، Tauri 2، Xray-core و Wintun</div>
+    </div>
+  </footer>
+
+  <div id="lightbox" class="lightbox" role="dialog" aria-modal="true">
+    <img id="lightboxImg" src="" alt="Screenshot preview" />
+  </div>
+
+  <script>
+    const I18N = {
+      fa: {
+        dir: "rtl",
+        title: "HotaruNet — فیلترشکن هوشمند و رایگان اندروید و ویندوز | Zero-Config VPN",
+        nav_downloads: "دانلود",
+        nav_engine: "موتور هوشمند",
+        nav_shots: "تصاویر",
+        nav_security: "امنیت و اشتراک",
+        nav_tg: "تلگرام",
+        pill_oss: "متن‌باز GPL-3.0 • رایگان و بدون تبلیغ",
+        hero_title: "فیلترشکن هوشمند و بدون نیاز به کانفیگ برای اندروید و ویندوز",
+        hero_sub: "فقط دکمه اتصال را بزنید! HotaruNet به‌جای پینگ‌های گول‌زننده HTTP 204، سرعت واقعی دانلود را می‌سنجد و بین ۵ پروتکل مدرن ضد‌فیلتر (VLESS REALITY، WARP، Hysteria 2، XHTTP و WS+TLS) بهترین مسیر را روی اینترنت شما پیدا و پایش می‌کند.",
+        cta_android: "📥 دانلود اندروید (APK)",
+        cta_windows: "🪟 دانلود ویندوز ۱۰ و ۱۱",
+        cta_tg: "📣 کانال تلگرام @OneForAllHub",
+        hero_meta: "بدون ساخت اکانت • دوزبانه فارسی / English • بررسی خودکار آپدیت",
+        stat_proto: "پروتکل ضد‌سانسور",
+        stat_cfg: "بدون سابسکریپشن دستی",
+        stat_plat: "نسخه بومی دو پلتفرم",
+        dl_title: "دانلود مستقیم آخرین نسخه",
+        dl_sub: "فایل‌های رسمی مستقیماً از GitHub Releases دریافت می‌شوند و دارای اعتبارسنجی SHA-256 هستند.",
+        dl_and_title: "اندروید ۷ تا ۱۵ (APK)",
+        dl_and_desc: "ساخته‌شده با Jetpack Compose و Xray-core. اگر مدل پردازنده گوشی خود را نمی‌دانید، نسخه Universal را نصب کنید.",
+        rec: "توصیه‌شده",
+        abi_arm64: "مناسب اکثر گوشی‌های جدید (28.7 MB)",
+        abi_uni_title: "همه‌کاره (Universal APK)",
+        abi_uni: "قابل نصب روی همه گوشی‌ها و تبلت‌ها (66.6 MB)",
+        abi_v7: "گوشی‌های قدیمی‌تر (29.2 MB)",
+        abi_x64: "شبیه‌سازهای اندروید و کروم‌بوک (29.7 MB)",
+        dl_win_title: "ویندوز ۱۰ و ۱۱ (۶۴ بیتی - پرتابل)",
+        dl_win_desc: "مبتنی بر Tauri 2 و Xray-core بدون نیاز به نصب. شامل ۳ حالت System Proxy، بدون پروکسی (No Proxy) و درایور رسمی Wintun TUN.",
+        win_size: "شامل HotaruNet.exe، سرویس TUN و درایور Wintun (45.9 MB)",
+        win_steps: "<li>فایل ZIP را در یک پوشه Extract کنید و <code>HotaruNet.exe</code> را اجرا نمایید.</li><li>حالت <strong>System Proxy</strong> بدون دسترسی ادمین فوراً کار می‌کند؛ حالت <strong>No Proxy</strong> نیز فقط پورت محلی <code>SOCKS5 / HTTP</code> را با دکمه کپی فعال می‌کند.</li><li>برای تونل کل سیستم (بازی، ترمینال و تلگرام) با <em>Run as administrator</em> اجرا و حالت <strong>TUN</strong> را فعال کنید.</li>",
+        hash_summary: "🔐 مشاهده کدهای اعتبارسنجی SHA-256 (نسخه v2.3.44)",
+        th_file: "فایل",
+        eng_title: "چرا HotaruNet روی اینترنت‌های محدود پایدار است؟",
+        eng_sub: "موتور Auto-Pilot به‌صورت خودکار با شرایط اپراتورهای همراه و ثابت (همراه اول، ایرانسل، شاتل، مخابرات و...) سازگار می‌شود.",
+        f1_t: "تست سرعت واقعی دانلود",
+        f1_d: "پاسخ خالی HTTP 204 ملاک سرعت نیست. هوتارو نت سرعت واقعی دریافت پکیج ۳۲ کیلوبایتی را می‌سنجد و سرورهای واقعی پرسرعت را انتخاب می‌کند.",
+        f2_t: "نگهبان زنده و سوییچ خودکار",
+        f2_d: "هر ۳۵ ثانیه با مصرف ناچیز (۳۲ کیلوبایت) مسیر پایش می‌شود و اگر سرعت به زیر ۶۴ KB/s افت کند، بدون قطعی به مسیر سریع‌تر منتقل می‌شوید.",
+        f3_t: "بدون محدودیت جغرافیایی",
+        f3_d: "سرورهای اروپا، آمریکا و آسیا بدون فیلتر مصنوعی و صرفاً بر اساس پهنای‌باند و پایداری واقعی با هم رقابت می‌کنند.",
+        p1: "پورت 443 با XTLS Vision و شبیه‌سازی کامل ترافیک TLS واقعی",
+        p2: "ثبت کلید اختصاصی WireGuard در هر دستگاه روی IPهای تمیز Anycast",
+        p3: "مبتنی بر QUIC / UDP با کنترل ازدحام بهینه برای عبور از Packet Loss",
+        p4: "ترنسپورت مقاوم HTTP/2 و HTTP/3 سازگار با CDNها",
+        p5: "مسیر پشتیبان از طریق Reverse Proxy برای شبکه‌های سخت‌گیر",
+        shots_title: "محیط کاربری دوزبانه (فارسی RTL و English)",
+        shots_sub: "برای بزرگ‌نمایی روی هر تصویر کلیک کنید.",
+        s1: "اندروید — متصل (فارسی)",
+        s2: "اندروید — صفحه اصلی (فارسی)",
+        s3: "اندروید — متصل (English)",
+        s4: "اندروید — صفحه اصلی (English)",
+        s5: "ویندوز ۱۰ و ۱۱ — صفحه اصلی و انتخاب حالت",
+        s6: "ویندوز — حالت No Proxy با پورت SOCKS5 / HTTP",
+        s7: "اندروید — ربات ۴ مرحله‌ای اتصال",
+        share_title: "حریم خصوصی صفر-لاگ و همرسانی با دوستان",
+        share_desc: "HotaruNet هیچ تاریخچه وب‌گردی، درخواست DNS یا IP کاربر را ذخیره نمی‌کند. اگر برای شما مفید بود، با یک ستاره در گیت‌هاب یا ارسال این صفحه به دوستانتان از دسترسی آزاد به اینترنت حمایت کنید.",
+        copy_link: "🔗 کپی لینک صفحه",
+        copied: "✅ کپی شد!",
+        share_tg: "ارسال در تلگرام",
+        privacy_link: "سیاست حریم خصوصی",
+        footer_copy: "منتشر شده تحت مجوز آزاد GPL-3.0 • ساخته شده با Jetpack Compose، Tauri 2، Xray-core و Wintun"
+      },
+      en: {
+        dir: "ltr",
+        title: "HotaruNet — Autonomous Zero-Config VPN Client for Android & Windows",
+        nav_downloads: "Downloads",
+        nav_engine: "Engine",
+        nav_shots: "Screenshots",
+        nav_security: "Privacy & Share",
+        nav_tg: "Telegram",
+        pill_oss: "Open-Source GPL-3.0 • Free & Ad-Free",
+        hero_title: "Autonomous Zero-Config VPN Client for Android & Windows",
+        hero_sub: "Just tap CONNECT. Instead of trusting empty HTTP 204 pings, HotaruNet probes real download throughput and autonomously selects across 5 censorship-resistant transports (VLESS REALITY, WARP, Hysteria 2, XHTTP, WS+TLS) with seamless failover.",
+        cta_android: "📥 Download Android APK",
+        cta_windows: "🪟 Download Windows 10/11",
+        cta_tg: "📣 Join @OneForAllHub",
+        hero_meta: "No signup or config import • Bilingual FA / EN UI • Built-in update alerts",
+        stat_proto: "Anti-DPI Protocols",
+        stat_cfg: "Zero Manual Setup",
+        stat_plat: "Native Mobile + Desktop",
+        dl_title: "Download Latest Official Release",
+        dl_sub: "Official signed packages fetched directly from GitHub Releases with SHA-256 verification.",
+        dl_and_title: "Android 7.0 – 15 (APK)",
+        dl_and_desc: "Built with Jetpack Compose & Xray-core. Choose ARM64 for modern phones, or Universal if unsure.",
+        rec: "Recommended",
+        abi_arm64: "Most modern smartphones (28.7 MB)",
+        abi_uni_title: "Universal APK (All ABIs)",
+        abi_uni: "Works on any Android device (66.6 MB)",
+        abi_v7: "Older 32-bit Android devices (29.2 MB)",
+        abi_x64: "Chromebooks & Android emulators (29.7 MB)",
+        dl_win_title: "Windows 10 / 11 (64-bit Portable)",
+        dl_win_desc: "Built with Tauri 2 & Xray-core. Zero installation — includes unprivileged System Proxy, No Proxy (local SOCKS5/HTTP ports), and Wintun TUN mode.",
+        win_size: "Includes HotaruNet.exe, TUN service & Wintun driver (45.9 MB)",
+        win_steps: "<li>Extract the ZIP archive and run <code>HotaruNet.exe</code>.</li><li><strong>System Proxy</strong> works immediately without Admin rights, while <strong>No Proxy</strong> exposes conflict-free local <code>SOCKS5 / HTTP</code> ports with 1-click copy.</li><li>For full-system routing (games, CLI, desktop apps), right-click &amp; <em>Run as administrator</em> to enable <strong>Wintun TUN</strong>.</li>",
+        hash_summary: "🔐 View SHA-256 Verification Checksums (v2.3.44)",
+        th_file: "File",
+        eng_title: "Built for High-DPI Throttled Networks",
+        eng_sub: "The Auto-Pilot engine dynamically adapts to cellular, ADSL, and fiber restrictions without manual tweaking.",
+        f1_t: "Real Throughput Probing",
+        f1_d: "Empty 204 responses lie under throttling. HotaruNet measures ~32 KiB real download bandwidth and ranks nodes by throughput and stability.",
+        f2_t: "Lightweight Live Watchdog",
+        f2_d: "Every 35s (~32 KiB overhead), the tunnel is verified; if speed drops below 64 KB/s for 3 samples, failover switches routes silently.",
+        f3_t: "Fair Global Competition",
+        f3_d: "No artificial geographic locks—nodes across Europe, North America, and Asia compete purely on empirical bandwidth and latency.",
+        p1: "TCP 443 with XTLS Vision flow & realistic TLS fingerprint",
+        p2: "Per-device ephemeral WireGuard key registration on clean Anycast IPs",
+        p3: "QUIC / UDP congestion-controlled transport resistant to packet loss",
+        p4: "HTTP/2 & HTTP/3 CDN-resilient transport",
+        p5: "Reverse-proxy CDN fallback for strict network firewalls",
+        shots_title: "Bilingual UI Screenshots (English & فارسی RTL)",
+        shots_sub: "Click any screenshot to enlarge.",
+        s1: "Android — Connected (Persian)",
+        s2: "Android — Home (Persian)",
+        s3: "Android — Connected (English)",
+        s4: "Android — Home (English)",
+        s5: "Windows 10/11 — Home & Mode Selector",
+        s6: "Windows — No Proxy Local SOCKS5/HTTP Ports",
+        s7: "Android — 4-Stage Animated Cyber Robot",
+        share_title: "Zero-Log Privacy & Community Sharing",
+        share_desc: "HotaruNet collects zero browsing history, DNS queries, or user IPs. If it keeps you connected, star the repository on GitHub or share this page with friends.",
+        copy_link: "🔗 Copy Page Link",
+        copied: "✅ Copied!",
+        share_tg: "Share on Telegram",
+        privacy_link: "Privacy Policy",
+        footer_copy: "Released under GPL-3.0 • Powered by Jetpack Compose, Tauri 2, Xray-core & Wintun"
+      }
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    const isIranLocaleOrTz = (navigator.language || "").toLowerCase().startsWith("fa") ||
+      (Intl.DateTimeFormat().resolvedOptions().timeZone || "") === "Asia/Tehran";
+    let currentLang = params.get("lang") || localStorage.getItem("hotaru_lang") || (isIranLocaleOrTz ? "fa" : "en");
+    if (currentLang !== "fa" && currentLang !== "en") currentLang = "fa";
+
+    function applyLang(lang) {
+      currentLang = lang;
+      localStorage.setItem("hotaru_lang", lang);
+      const dict = I18N[lang];
+      document.documentElement.lang = lang;
+      document.documentElement.dir = dict.dir;
+      document.title = dict.title;
+      document.querySelectorAll("[data-i18n]").forEach(el => {
+        const key = el.getAttribute("data-i18n");
+        if (dict[key]) el.textContent = dict[key];
+      });
+      document.querySelectorAll("[data-i18n-html]").forEach(el => {
+        const key = el.getAttribute("data-i18n-html");
+        if (dict[key]) el.innerHTML = dict[key];
+      });
+      document.getElementById("langToggle").textContent = lang === "fa" ? "English" : "فارسی";
+    }
+
+    document.getElementById("langToggle").addEventListener("click", () => {
+      applyLang(currentLang === "fa" ? "en" : "fa");
+    });
+    applyLang(currentLang);
+
+    // Lightbox
+    const lightbox = document.getElementById("lightbox");
+    const lightboxImg = document.getElementById("lightboxImg");
+    document.querySelectorAll("[data-zoom]").forEach(img => {
+      img.addEventListener("click", () => {
+        lightboxImg.src = img.src;
+        lightboxImg.alt = img.alt;
+        lightbox.classList.add("open");
+      });
+    });
+    lightbox.addEventListener("click", () => lightbox.classList.remove("open"));
+
+    // Copy share URL
+    const copyBtn = document.getElementById("copyShareBtn");
+    copyBtn.addEventListener("click", async () => {
+      const shareUrl = window.location.href.startsWith("http")
+        ? window.location.href
+        : "https://oneforallhub.github.io/HotaruNet/";
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        copyBtn.textContent = I18N[currentLang].copied;
+        setTimeout(() => { copyBtn.textContent = I18N[currentLang].copy_link; }, 1800);
+      } catch (_) {}
+    });
+
+    // Live sync latest GitHub release links
+    fetch("https://api.github.com/repos/OneForAllHub/HotaruNet/releases/latest")
+      .then(r => r.ok ? r.json() : null)
+      .then(rel => {
+        if (!rel || !rel.tag_name || !Array.isArray(rel.assets)) return;
+        document.getElementById("verBadge").textContent = "⚡ " + rel.tag_name;
+        const map = {
+          "arm64-v8a": a => a.name.includes("arm64-v8a") && a.name.endsWith(".apk"),
+          "universal": a => a.name.includes("universal") && a.name.endsWith(".apk"),
+          "armeabi-v7a": a => a.name.includes("armeabi-v7a") && a.name.endsWith(".apk"),
+          "x86_64": a => a.name.includes("x86_64") && a.name.endsWith(".apk"),
+          "windows_x64": a => a.name.includes("windows_x64") && a.name.endsWith(".zip")
+        };
+        for (const [key, pred] of Object.entries(map)) {
+          const asset = rel.assets.find(pred);
+          if (!asset) continue;
+          const el = document.querySelector(`[data-asset="${key}"]`);
+          if (el) el.href = asset.browser_download_url;
+          if (key === "arm64-v8a") document.getElementById("heroAndroidBtn").href = asset.browser_download_url;
+          if (key === "windows_x64") {
+            document.getElementById("heroWinBtn").href = asset.browser_download_url;
+            const titleEl = el && el.querySelector("strong");
+            if (titleEl) titleEl.innerHTML = `${asset.name} <span class="badge-rec">Portable</span>`;
+          }
+        }
+      })
+      .catch(() => {});
+  </script>
+</body>
+</html>
