@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>HotaruNet — فیلترشکن هوشمند و رایگان اندروید و ویندوز | Zero-Config VPN</title>
-  <meta name="description" content="HotaruNet (هوتارو نت) — کلاینت VPN متن‌باز، رایگان و بدون نیاز به کانفیگ برای اندروید و ویندوز ۱۰ و ۱۱ با پشتیبانی از VLESS REALITY، Hysteria 2، Cloudflare WARP، حالت بدون پروکسی (SOCKS5/HTTP)، ربات مراحل اتصال و سوییچ خودکار." />
-  <meta name="keywords" content="HotaruNet, هوتارو نت, فیلترشکن ویندوز, فیلترشکن اندروید, بدون پروکسی, No Proxy, SOCKS5, HTTP proxy, VLESS REALITY, Hysteria 2, Cloudflare WARP, Xray-core, anti-censorship VPN, free open source VPN" />
+  <meta name="description" content="HotaruNet (هوتارو نت) — کلاینت VPN پرتابل، متن‌باز، رایگان و بدون نیاز به کانفیگ یا پیش‌نیاز (.NET/VC++) برای اندروید و ویندوز ۱۰ و ۱۱ با پشتیبانی از VLESS REALITY، Hysteria 2، Cloudflare WARP، حالت بدون پروکسی (SOCKS5/HTTP)، ربات مراحل اتصال و سوییچ خودکار." />
+  <meta name="keywords" content="HotaruNet, هوتارو نت, فیلترشکن ویندوز بدون نصب, پرتابل ویندوز, فیلترشکن اندروید, بدون پروکسی, No Proxy, SOCKS5, HTTP proxy, WebView2, VLESS REALITY, Hysteria 2, Cloudflare WARP, Xray-core, portable Windows VPN, free open source VPN" />
   <meta name="theme-color" content="#070B14" />
   <link rel="icon" type="image/png" href="assets/logo.png" />
   <link rel="canonical" href="https://oneforallhub.github.io/HotaruNet/" />
@@ -13,31 +13,56 @@
   <!-- Open Graph / Telegram / Social Previews -->
   <meta property="og:type" content="website" />
   <meta property="og:title" content="HotaruNet — Autonomous Zero-Config VPN for Android & Windows" />
-  <meta property="og:description" content="Free, open-source (GPL-3.0) anti-censorship VPN client featuring VLESS REALITY, Cloudflare WARP, Hysteria 2, XHTTP, real bandwidth probing, and seamless auto-failover." />
+  <meta property="og:description" content="Free, open-source (GPL-3.0) portable VPN for Android & Windows 10/11 — zero config, zero .NET/VC++ prerequisites, VLESS REALITY, WARP, Hysteria 2, XHTTP, and real bandwidth auto-failover." />
   <meta property="og:url" content="https://oneforallhub.github.io/HotaruNet/" />
   <meta property="og:image" content="https://raw.githubusercontent.com/OneForAllHub/HotaruNet/main/assets/screenshots/windows-home-en.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="HotaruNet — Free Zero-Config Android & Windows VPN" />
-  <meta name="twitter:description" content="One-tap anti-censorship client powered by Xray-core, Wintun TUN, real throughput probing, and 5-protocol failover." />
+  <meta name="twitter:description" content="Portable zero-prerequisite Windows & Android VPN powered by Xray-core, Wintun TUN, real throughput probing, and 5-protocol failover." />
   <meta name="twitter:image" content="https://raw.githubusercontent.com/OneForAllHub/HotaruNet/main/assets/screenshots/windows-home-en.png" />
 
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "HotaruNet",
-    "operatingSystem": "Android 7.0+, Windows 10, Windows 11",
-    "applicationCategory": "SecurityApplication",
-    "softwareVersion": "2.3.44",
-    "license": "https://www.gnu.org/licenses/gpl-3.0.html",
-    "url": "https://github.com/OneForAllHub/HotaruNet",
-    "downloadUrl": "https://github.com/OneForAllHub/HotaruNet/releases/latest",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
+  [
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "HotaruNet",
+      "operatingSystem": "Android 7.0+, Windows 10 (64-bit), Windows 11 (64-bit)",
+      "applicationCategory": "SecurityApplication",
+      "softwareVersion": "2.3.44",
+      "softwareRequirements": "Standalone portable build on 64-bit Windows 10/11 (no .NET, VC++ Redistributable, or separate driver install needed; extract full ZIP before running; Microsoft Edge WebView2 Runtime needed only on stripped Windows 10 LTSC/Lite builds).",
+      "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+      "url": "https://github.com/OneForAllHub/HotaruNet",
+      "downloadUrl": "https://github.com/OneForAllHub/HotaruNet/releases/latest",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Does HotaruNet for Windows require installing .NET, VC++ Redistributable, or drivers first?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. HotaruNet is a standalone portable archive that bundles libhotarucore.dll, wintun.dll, WebView2Loader.dll, and routing assets with statically linked CRT. On Windows 11 and standard Windows 10 (64-bit) it runs immediately after extracting the full ZIP folder. Only stripped Windows 10 LTSC/Lite builds where Microsoft Edge was removed require installing the 2 MB Microsoft Edge WebView2 Runtime, and Administrator rights are only needed for optional TUN Mode."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "آیا نسخه ویندوز هوتارو نت نیاز به نصب پیش‌نیاز خاصی دارد؟",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "خیر. نسخه ویندوز کاملاً پرتابل است و به .NET، پیش‌نیاز VC++ یا نصب درایور جداگانه نیاز ندارد؛ کافی است کل فایل ZIP را Extract کرده و HotaruNet.exe را اجرا کنید (از داخل WinRAR مستقیم اجرا نکنید). تنها روی نسخه‌های دست‌کاری‌شده Windows 10 LTSC/Lite که مرورگر Edge حذف شده، نصب پیش‌نیاز ۲ مگابایتی Microsoft Edge WebView2 Runtime لازم است و دسترسی Administrator فقط برای حالت TUN نیاز می‌شود."
+          }
+        }
+      ]
     }
-  }
+  ]
   </script>
 
   <style>
@@ -388,9 +413,9 @@
             </a>
           </div>
           <ol class="steps" data-i18n-html="win_steps">
-            <li>فایل ZIP را در یک پوشه Extract کنید و <code>HotaruNet.exe</code> را اجرا نمایید.</li>
-            <li>حالت <strong>System Proxy</strong> بدون دسترسی ادمین فوراً کار می‌کند؛ حالت <strong>No Proxy</strong> نیز فقط پورت محلی <code>SOCKS5 / HTTP</code> را با دکمه کپی فعال می‌کند.</li>
-            <li>برای تونل کل سیستم (بازی، ترمینال و تلگرام) با <em>Run as administrator</em> اجرا و حالت <strong>TUN</strong> را فعال کنید.</li>
+            <li>کل فایل ZIP را کامل در یک پوشه <strong>Extract</strong> کنید و <code>HotaruNet.exe</code> را اجرا نمایید (مستقیم از داخل WinRAR اجرا نکنید).</li>
+            <li><strong>بدون پیش‌نیاز نصبی:</strong> نیازی به <code>.NET</code> یا <code>VC++</code> نیست (فقط روی ویندوزهای دست‌کاری‌شده <em>Windows 10 LTSC / Lite</em> بدون Edge، پیش‌نیاز ۲ مگابایتی <em>WebView2 Runtime</em> مایکروسافت لازم است).</li>
+            <li>حالت‌های <strong>System Proxy</strong> و <strong>No Proxy</strong> بدون دسترسی ادمین کار می‌کنند و فقط حالت <strong>TUN</strong> نیاز به <em>Run as administrator</em> دارد.</li>
           </ol>
         </div>
       </div>
@@ -591,9 +616,9 @@
         abi_v7: "گوشی‌های قدیمی‌تر (29.2 MB)",
         abi_x64: "شبیه‌سازهای اندروید و کروم‌بوک (29.7 MB)",
         dl_win_title: "ویندوز ۱۰ و ۱۱ (۶۴ بیتی - پرتابل)",
-        dl_win_desc: "مبتنی بر Tauri 2 و Xray-core بدون نیاز به نصب. شامل ۳ حالت System Proxy، بدون پروکسی (No Proxy) و درایور رسمی Wintun TUN.",
+        dl_win_desc: "مبتنی بر Tauri 2 و Xray-core، پرتابل و بدون نیاز به پیش‌نیاز (.NET/VC++). شامل ۳ حالت System Proxy، بدون پروکسی (No Proxy) و درایور رسمی Wintun TUN.",
         win_size: "شامل HotaruNet.exe، سرویس TUN و درایور Wintun (45.9 MB)",
-        win_steps: "<li>فایل ZIP را در یک پوشه Extract کنید و <code>HotaruNet.exe</code> را اجرا نمایید.</li><li>حالت <strong>System Proxy</strong> بدون دسترسی ادمین فوراً کار می‌کند؛ حالت <strong>No Proxy</strong> نیز فقط پورت محلی <code>SOCKS5 / HTTP</code> را با دکمه کپی فعال می‌کند.</li><li>برای تونل کل سیستم (بازی، ترمینال و تلگرام) با <em>Run as administrator</em> اجرا و حالت <strong>TUN</strong> را فعال کنید.</li>",
+        win_steps: "<li>کل فایل ZIP را کامل در یک پوشه <strong>Extract</strong> کنید و <code>HotaruNet.exe</code> را اجرا نمایید (مستقیم از داخل WinRAR اجرا نکنید).</li><li><strong>بدون پیش‌نیاز نصبی:</strong> نیازی به <code>.NET</code> یا <code>VC++</code> نیست (فقط روی ویندوزهای دست‌کاری‌شده <em>Windows 10 LTSC / Lite</em> بدون Edge، پیش‌نیاز ۲ مگابایتی <em>WebView2 Runtime</em> مایکروسافت لازم است).</li><li>حالت‌های <strong>System Proxy</strong> و <strong>No Proxy</strong> بدون دسترسی ادمین کار می‌کنند و فقط حالت <strong>TUN</strong> نیاز به <em>Run as administrator</em> دارد.</li>",
         hash_summary: "🔐 مشاهده کدهای اعتبارسنجی SHA-256 (نسخه v2.3.44)",
         th_file: "فایل",
         eng_title: "چرا HotaruNet روی اینترنت‌های محدود پایدار است؟",
@@ -655,9 +680,9 @@
         abi_v7: "Older 32-bit Android devices (29.2 MB)",
         abi_x64: "Chromebooks & Android emulators (29.7 MB)",
         dl_win_title: "Windows 10 / 11 (64-bit Portable)",
-        dl_win_desc: "Built with Tauri 2 & Xray-core. Zero installation — includes unprivileged System Proxy, No Proxy (local SOCKS5/HTTP ports), and Wintun TUN mode.",
+        dl_win_desc: "Built with Tauri 2 & Xray-core. Zero installation & zero .NET/VC++ prerequisites — includes System Proxy, No Proxy (local SOCKS5/HTTP ports), and Wintun TUN mode.",
         win_size: "Includes HotaruNet.exe, TUN service & Wintun driver (45.9 MB)",
-        win_steps: "<li>Extract the ZIP archive and run <code>HotaruNet.exe</code>.</li><li><strong>System Proxy</strong> works immediately without Admin rights, while <strong>No Proxy</strong> exposes conflict-free local <code>SOCKS5 / HTTP</code> ports with 1-click copy.</li><li>For full-system routing (games, CLI, desktop apps), right-click &amp; <em>Run as administrator</em> to enable <strong>Wintun TUN</strong>.</li>",
+        win_steps: "<li><strong>Extract the entire ZIP folder</strong> first, then run <code>HotaruNet.exe</code> (do not launch directly inside WinRAR/7-Zip).</li><li><strong>Zero prerequisites:</strong> No <code>.NET</code> or <code>VC++ Redistributable</code> required (only stripped <em>Windows 10 LTSC / Lite</em> builds without Edge need Microsoft's 2 MB <em>Edge WebView2 Runtime</em>).</li><li><strong>System Proxy</strong> and <strong>No Proxy</strong> work without Admin rights; <em>Run as administrator</em> is only needed for <strong>Wintun TUN</strong>.</li>",
         hash_summary: "🔐 View SHA-256 Verification Checksums (v2.3.44)",
         th_file: "File",
         eng_title: "Built for High-DPI Throttled Networks",

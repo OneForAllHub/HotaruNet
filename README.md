@@ -58,13 +58,15 @@ High-performance portable client featuring **3 flexible routing modes**: **Syste
 | [**`HotaruNet_v2.3.44_windows_x64.zip`**](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_v2.3.44_windows_x64.zip) | **Windows 10 / 11 (64-bit)** | **45.9 MB** | **Standalone Portable Archive** (Zero-Install). Includes `HotaruNet.exe`, privileged TUN service, obfuscated Xray-core DLL, and official Wintun driver.<br/>`SHA-256: 3A49F3C4DAC2B93F5E54672807430F525A7854F7C091F6869C0404C0A736EF11` |
 
 #### 🚀 Quick Start for Windows:
-1. Download [**`HotaruNet_v2.3.44_windows_x64.zip`**](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_v2.3.44_windows_x64.zip) and extract to any folder.
+1. Download [**`HotaruNet_v2.3.44_windows_x64.zip`**](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_v2.3.44_windows_x64.zip) and **extract the entire ZIP archive** to a folder first *(do not double-click `HotaruNet.exe` directly inside WinRAR / 7-Zip / ZIP preview, so `libhotarucore.dll`, `WebView2Loader.dll`, `wintun.dll`, and `assets/` load side-by-side)*.
 2. Run **`HotaruNet.exe`**.
 3. Choose your mode:
    - **System Proxy Mode** (Default): Works immediately without Administrator rights. Automatically configures and restores Windows system proxy.
    - **No Proxy Mode** *(New in v2.3.44)*: Starts the fast autonomous local tunnel (`127.0.0.1` `SOCKS5` + `HTTP` on conflict-free dynamic ports) without touching Windows Registry proxy settings, displaying live copy buttons for manual app/IDE/terminal setup.
    - **TUN Mode**: Full virtual network adapter routing. Right-click `HotaruNet.exe` and select *Run as administrator* to enable system-wide Wintun routing.
 4. Click **CONNECT** to watch the 4-stage animated Cyber Robot sync fresh cloud mirrors, sweep speeds, and lock onto the fastest route!
+
+> 💡 **Zero-Prerequisite Portable Build:** Runs out-of-the-box on 64-bit Windows 11 and standard Windows 10 — **no `.NET`, no `VC++ Redistributable`, and no separate driver installer required**. Only stripped custom OS editions (*Windows 10 LTSC / Lite* where Edge was completely removed) require Microsoft's 2 MB [Edge WebView2 Evergreen Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/), and Administrator rights are only needed for optional **TUN Mode**.
 
 ---
 
@@ -191,8 +193,8 @@ HotaruNet combines a **Zero-Config Cyber-Anime UI** with an **Autonomous Multi-S
 </details>
 
 <details>
-<summary><b>Which Windows version is supported?</b></summary>
-<p>HotaruNet supports 64-bit Windows 10 and Windows 11. It operates with zero installation—just extract the zip and run <code>HotaruNet.exe</code>.</p>
+<summary><b>Which Windows version is supported? Do I need to install any prerequisites first?</b></summary>
+<p>HotaruNet supports 64-bit Windows 10 and Windows 11 with <b>zero installation and zero prerequisites</b> — no <code>.NET</code>, no <code>VC++ Redistributable</code>, and no separate Wintun driver setup are needed. Always <b>extract the entire ZIP archive</b> to a folder before running <code>HotaruNet.exe</code> (do not launch it directly inside WinRAR/7-Zip). Only heavily stripped custom OS builds (such as <i>Windows 10 LTSC / Lite</i> with Microsoft Edge removed) require installing Microsoft's 2 MB <a href="https://developer.microsoft.com/en-us/microsoft-edge/webview2/">Edge WebView2 Evergreen Runtime</a>, and Administrator rights are only needed if you select <b>TUN Mode</b>.</p>
 </details>
 
 <details>
