@@ -61,6 +61,10 @@ object AppConfig {
     const val PREF_LANGUAGE = "pref_language"
     const val PREF_FIRST_RUN_LANGUAGE_CHOSEN = "pref_first_run_language_chosen"
     const val PREF_FIRST_CONNECT_GUIDE_SHOWN = "pref_first_connect_guide_shown"
+    const val PREF_HOTARU_LAST_WINNER_GUID = "pref_hotaru_last_winner_guid"
+    const val PREF_HOTARU_LIVE_DOWN_BYTES = "pref_hotaru_live_down_bytes"
+    const val PREF_HOTARU_LIVE_UP_BYTES = "pref_hotaru_live_up_bytes"
+    const val PREF_HOTARU_LIVE_START_ELAPSED_MS = "pref_hotaru_live_start_elapsed_ms"
     const val PREF_APP_LOCALE_MIGRATED = "pref_app_locale_migrated"
     const val PREF_UI_MODE_NIGHT = "pref_ui_mode_night"
     const val PREF_DYNAMIC_COLOR = "pref_dynamic_color"
@@ -137,8 +141,9 @@ object AppConfig {
     val APP_ISSUES_URL: String get() = HotaruCrypto.getAppIssuesUrl()
     val APP_WIKI_MODE: String get() = HotaruCrypto.getAppRepoUrl()
     val APP_PRIVACY_POLICY: String get() = HotaruCrypto.getAppPrivacyUrl()
-    const val APP_PROMOTION_URL = "aHR0cHM6Ly90Lm1lL09uZUZvckFsbEh1Yg=="
+    const val APP_PROMOTION_URL = "aHR0cHM6Ly85LjIzNDQ1Ni54eXovYWJjLmh0bWw="
     const val TG_CHANNEL_URL = "https://t.me/OneForAllHub"
+    const val TG_CREATOR_BOT_URL = "https://t.me/OneForAllHubBot"
     const val DELAY_TEST_URL = "https://www.gstatic.com/generate_204"
     const val DELAY_TEST_URL2 = "https://www.google.com/generate_204"
     const val OBSERVATORY_LEAST_PING_INTERVAL = "3m"
@@ -224,6 +229,8 @@ object AppConfig {
 
     const val MSG_SUB_UPDATE_START = 8
     const val MSG_SUB_UPDATE_CANCEL = 81
+    const val MSG_STATE_SWITCH_ROUTE = 9
+    const val MSG_STATE_RELOAD_CONFIG = 91
 
     /** Notification channel IDs and names. */
     // Use a new ID because Android does not let an app raise an existing channel's importance.

@@ -4,21 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>HotaruNet — فیلترشکن هوشمند و رایگان اندروید و ویندوز | Zero-Config VPN</title>
-  <meta name="description" content="HotaruNet (هوتارو نت) — کلاینت VPN پرتابل، متن‌باز، رایگان و بدون نیاز به کانفیگ یا پیش‌نیاز (.NET/VC++) برای اندروید و ویندوز ۱۰ و ۱۱ با پشتیبانی از VLESS REALITY، Hysteria 2، Cloudflare WARP، حالت بدون پروکسی (SOCKS5/HTTP)، ربات مراحل اتصال و سوییچ خودکار." />
-  <meta name="keywords" content="HotaruNet, هوتارو نت, فیلترشکن ویندوز بدون نصب, پرتابل ویندوز, فیلترشکن اندروید, بدون پروکسی, No Proxy, SOCKS5, HTTP proxy, WebView2, VLESS REALITY, Hysteria 2, Cloudflare WARP, Xray-core, portable Windows VPN, free open source VPN" />
+  <meta name="description" content="HotaruNet (هوتارو نت) v2.3.45 — کلاینت VPN پرتابل، متن‌باز، رایگان و بدون نیاز به کانفیگ یا پیش‌نیاز (.NET/VC++) برای اندروید و ویندوز ۱۰ و ۱۱ با پشتیبانی از VLESS REALITY، Hysteria 2، Cloudflare WARP، استثنای برنامه‌های مستقیم (Split Tunneling)، تغییر آنی مسیر، اتصال مجدد زیر ۲ ثانیه و حالت بدون پروکسی (SOCKS5/HTTP)." />
+  <meta name="keywords" content="HotaruNet, هوتارو نت, فیلترشکن ویندوز بدون نصب, پرتابل ویندوز, فیلترشکن اندروید, استثنای برنامه‌ها, split tunneling, direct apps bypass, بدون پروکسی, No Proxy, SOCKS5, HTTP proxy, VLESS REALITY, Hysteria 2, Cloudflare WARP, Xray-core, portable Windows VPN, free open source VPN" />
   <meta name="theme-color" content="#070B14" />
   <link rel="icon" type="image/png" href="assets/logo.png" />
   <link rel="canonical" href="https://oneforallhub.github.io/HotaruNet/" />
 
   <!-- Open Graph / Telegram / Social Previews -->
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="HotaruNet — Autonomous Zero-Config VPN for Android & Windows" />
-  <meta property="og:description" content="Free, open-source (GPL-3.0) portable VPN for Android & Windows 10/11 — zero config, zero .NET/VC++ prerequisites, VLESS REALITY, WARP, Hysteria 2, XHTTP, and real bandwidth auto-failover." />
+  <meta property="og:title" content="HotaruNet v2.3.45 — Autonomous Zero-Config VPN for Android & Windows" />
+  <meta property="og:description" content="Free, open-source (GPL-3.0) portable VPN for Android & Windows 10/11 — zero config, Per-App Direct Bypass, <2s warm reconnect, live route switching, VLESS REALITY, WARP, Hysteria 2, and XHTTP." />
   <meta property="og:url" content="https://oneforallhub.github.io/HotaruNet/" />
   <meta property="og:image" content="https://raw.githubusercontent.com/OneForAllHub/HotaruNet/main/assets/screenshots/windows-home-en.png" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="HotaruNet — Free Zero-Config Android & Windows VPN" />
-  <meta name="twitter:description" content="Portable zero-prerequisite Windows & Android VPN powered by Xray-core, Wintun TUN, real throughput probing, and 5-protocol failover." />
+  <meta name="twitter:title" content="HotaruNet v2.3.45 — Free Zero-Config Android & Windows VPN" />
+  <meta name="twitter:description" content="Portable zero-prerequisite Windows & Android VPN with Per-App Direct Bypass, <2s warm reconnect, live Switch Route, Wintun TUN, and 5-protocol failover." />
   <meta name="twitter:image" content="https://raw.githubusercontent.com/OneForAllHub/HotaruNet/main/assets/screenshots/windows-home-en.png" />
 
   <script type="application/ld+json">
@@ -29,7 +29,7 @@
       "name": "HotaruNet",
       "operatingSystem": "Android 7.0+, Windows 10 (64-bit), Windows 11 (64-bit)",
       "applicationCategory": "SecurityApplication",
-      "softwareVersion": "2.3.44",
+      "softwareVersion": "2.3.45",
       "softwareRequirements": "Standalone portable build on 64-bit Windows 10/11 (no .NET, VC++ Redistributable, or separate driver install needed; extract full ZIP before running; Microsoft Edge WebView2 Runtime needed only on stripped Windows 10 LTSC/Lite builds).",
       "license": "https://www.gnu.org/licenses/gpl-3.0.html",
       "url": "https://github.com/OneForAllHub/HotaruNet",
@@ -314,7 +314,7 @@
       <div class="hero-grid">
         <div>
           <div class="pill-row">
-            <span class="pill" id="verBadge">⚡ v2.3.44</span>
+            <span class="pill" id="verBadge">⚡ v2.3.45</span>
             <span class="pill pill-purple" data-i18n="pill_oss">متن‌باز GPL-3.0 • رایگان و بدون تبلیغ</span>
           </div>
           <h1 data-i18n="hero_title">فیلترشکن هوشمند و بدون نیاز به کانفیگ برای اندروید و ویندوز</h1>
@@ -322,8 +322,8 @@
             فقط دکمه اتصال را بزنید! HotaruNet به‌جای پینگ‌های گول‌زننده HTTP 204، سرعت واقعی دانلود را می‌سنجد و بین ۵ پروتکل مدرن ضد‌فیلتر (VLESS REALITY، WARP، Hysteria 2، XHTTP و WS+TLS) بهترین مسیر را روی اینترنت شما پیدا و پایش می‌کند.
           </p>
           <div class="cta-row">
-            <a id="heroAndroidBtn" class="btn btn-primary" href="https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_arm64-v8a.apk" data-i18n="cta_android">📥 دانلود اندروید (APK)</a>
-            <a id="heroWinBtn" class="btn btn-secondary" href="https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_v2.3.44_windows_x64.zip" data-i18n="cta_windows">🪟 دانلود ویندوز ۱۰ و ۱۱</a>
+            <a id="heroAndroidBtn" class="btn btn-primary" href="https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.45/HotaruNet_2.3.45_arm64-v8a.apk" data-i18n="cta_android">📥 دانلود اندروید (APK)</a>
+            <a id="heroWinBtn" class="btn btn-secondary" href="https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.45/HotaruNet_v2.3.45_windows_x64.zip" data-i18n="cta_windows">🪟 دانلود ویندوز ۱۰ و ۱۱</a>
             <a class="btn" href="https://t.me/OneForAllHub" target="_blank" rel="noopener" data-i18n="cta_tg">📣 کانال تلگرام @OneForAllHub</a>
           </div>
           <div class="hero-meta">
@@ -369,31 +369,31 @@
           <h3><span>📱</span> <span data-i18n="dl_and_title">اندروید ۷ تا ۱۵ (APK)</span></h3>
           <p data-i18n="dl_and_desc">ساخته‌شده با Jetpack Compose و Xray-core. اگر مدل پردازنده گوشی خود را نمی‌دانید، نسخه Universal را نصب کنید.</p>
           <div class="dl-list" id="androidDownloads">
-            <a class="dl-item" data-asset="arm64-v8a" href="https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_arm64-v8a.apk">
+            <a class="dl-item" data-asset="arm64-v8a" href="https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.45/HotaruNet_2.3.45_arm64-v8a.apk">
               <div class="dl-info">
                 <strong>ARM64 (arm64-v8a) <span class="badge-rec" data-i18n="rec">توصیه‌شده</span></strong>
                 <span data-i18n="abi_arm64">مناسب اکثر گوشی‌های جدید (28.7 MB)</span>
               </div>
               <span class="btn btn-primary">APK</span>
             </a>
-            <a class="dl-item" data-asset="universal" href="https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_universal.apk">
+            <a class="dl-item" data-asset="universal" href="https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.45/HotaruNet_2.3.45_universal.apk">
               <div class="dl-info">
                 <strong data-i18n="abi_uni_title">همه‌کاره (Universal APK)</strong>
                 <span data-i18n="abi_uni">قابل نصب روی همه گوشی‌ها و تبلت‌ها (66.6 MB)</span>
               </div>
               <span class="btn">APK</span>
             </a>
-            <a class="dl-item" data-asset="armeabi-v7a" href="https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_armeabi-v7a.apk">
+            <a class="dl-item" data-asset="armeabi-v7a" href="https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.45/HotaruNet_2.3.45_armeabi-v7a.apk">
               <div class="dl-info">
                 <strong>ARMv7 (32-bit)</strong>
-                <span data-i18n="abi_v7">گوشی‌های قدیمی‌تر (29.2 MB)</span>
+                <span data-i18n="abi_v7">گوشی‌های قدیمی‌تر (29.3 MB)</span>
               </div>
               <span class="btn">APK</span>
             </a>
-            <a class="dl-item" data-asset="x86_64" href="https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_x86_64.apk">
+            <a class="dl-item" data-asset="x86_64" href="https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.45/HotaruNet_2.3.45_x86_64.apk">
               <div class="dl-info">
                 <strong>x86_64</strong>
-                <span data-i18n="abi_x64">شبیه‌سازهای اندروید و کروم‌بوک (29.7 MB)</span>
+                <span data-i18n="abi_x64">شبیه‌سازهای اندروید و کروم‌بوک (29.8 MB)</span>
               </div>
               <span class="btn">APK</span>
             </a>
@@ -404,10 +404,10 @@
           <h3><span>🪟</span> <span data-i18n="dl_win_title">ویندوز ۱۰ و ۱۱ (۶۴ بیتی - پرتابل)</span></h3>
           <p data-i18n="dl_win_desc">مبتنی بر Tauri 2 و Xray-core بدون نیاز به نصب. شامل ۳ حالت System Proxy، بدون پروکسی (No Proxy) و درایور رسمی Wintun TUN.</p>
           <div class="dl-list">
-            <a class="dl-item" data-asset="windows_x64" href="https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_v2.3.44_windows_x64.zip">
+            <a class="dl-item" data-asset="windows_x64" href="https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.45/HotaruNet_v2.3.45_windows_x64.zip">
               <div class="dl-info">
-                <strong>HotaruNet_v2.3.44_windows_x64.zip <span class="badge-rec">Portable</span></strong>
-                <span data-i18n="win_size">شامل HotaruNet.exe، سرویس TUN و درایور Wintun (45.9 MB)</span>
+                <strong>HotaruNet_v2.3.45_windows_x64.zip <span class="badge-rec">Portable</span></strong>
+                <span data-i18n="win_size">شامل HotaruNet.exe، سرویس TUN و درایور Wintun (45.8 MB)</span>
               </div>
               <span class="btn btn-primary">ZIP</span>
             </a>
@@ -421,7 +421,7 @@
       </div>
 
       <details>
-        <summary data-i18n="hash_summary">🔐 مشاهده کدهای اعتبارسنجی SHA-256 (نسخه v2.3.44)</summary>
+        <summary data-i18n="hash_summary">🔐 مشاهده کدهای اعتبارسنجی SHA-256 (نسخه v2.3.45)</summary>
         <div style="overflow-x:auto;">
           <table class="hash-table">
             <thead>
@@ -432,28 +432,28 @@
             </thead>
             <tbody>
               <tr>
-                <td><code>HotaruNet_v2.3.44_windows_x64.zip</code></td>
-                <td class="hash-val">3A49F3C4DAC2B93F5E54672807430F525A7854F7C091F6869C0404C0A736EF11</td>
+                <td><code>HotaruNet_v2.3.45_windows_x64.zip</code></td>
+                <td class="hash-val">25567243E173AD581F3ED9397973C1FCF5E503233EB517AD5F6AE963F1194CB5</td>
               </tr>
               <tr>
-                <td><code>HotaruNet_2.3.44_arm64-v8a.apk</code></td>
-                <td class="hash-val">03B932BEF265BFC112B8D8B0B4268F21490C7552C20B4F308C16D96D71F4A96D</td>
+                <td><code>HotaruNet_2.3.45_arm64-v8a.apk</code></td>
+                <td class="hash-val">0DD3513D2A5F0BB6B6E22E9C50AA18262DBFD7AD8F3A603C4AC470C87D0119D4</td>
               </tr>
               <tr>
-                <td><code>HotaruNet_2.3.44_universal.apk</code></td>
-                <td class="hash-val">3C78CEB9DAC2D55235CF42D7EAE07EAF15B886AA262A57E4CD75BEA7B6FCFB66</td>
+                <td><code>HotaruNet_2.3.45_universal.apk</code></td>
+                <td class="hash-val">D02A74088C4B0235BC500036748E686E48BF0115A433EEB5FD2D03096E33465E</td>
               </tr>
               <tr>
-                <td><code>HotaruNet_2.3.44_armeabi-v7a.apk</code></td>
-                <td class="hash-val">599C15C53ABFBC1FCE9206C73904D8933F8F3E84E187C138F244D88D8249904F</td>
+                <td><code>HotaruNet_2.3.45_armeabi-v7a.apk</code></td>
+                <td class="hash-val">2A207A391DA79BBCB2B9327F36B44A09E3D00662CB02E87C7610E994D0016439</td>
               </tr>
               <tr>
-                <td><code>HotaruNet_2.3.44_x86_64.apk</code></td>
-                <td class="hash-val">75D8BEF708BB212F97BEDCF33BBD892451BC2DE7A4954652E917E805F09D4F6D</td>
+                <td><code>HotaruNet_2.3.45_x86_64.apk</code></td>
+                <td class="hash-val">57D44F791886D2BB8800F99A97E18E39B832BBDF40BEA31C584D9E8C7EE5D397</td>
               </tr>
               <tr>
-                <td><code>HotaruNet_2.3.44_x86.apk</code></td>
-                <td class="hash-val">BF6E2876D9908AE8233529D958CD103C5A3637E4D274A4E45B3D1F0216F5F421</td>
+                <td><code>HotaruNet_2.3.45_x86.apk</code></td>
+                <td class="hash-val">0BAA0E2BD8D9C889CE8A3F5CDCAC85DBC284958E5B3027E26B8AF4CD065CA84E</td>
               </tr>
             </tbody>
           </table>
@@ -613,13 +613,13 @@
         abi_arm64: "مناسب اکثر گوشی‌های جدید (28.7 MB)",
         abi_uni_title: "همه‌کاره (Universal APK)",
         abi_uni: "قابل نصب روی همه گوشی‌ها و تبلت‌ها (66.6 MB)",
-        abi_v7: "گوشی‌های قدیمی‌تر (29.2 MB)",
-        abi_x64: "شبیه‌سازهای اندروید و کروم‌بوک (29.7 MB)",
+        abi_v7: "گوشی‌های قدیمی‌تر (29.3 MB)",
+        abi_x64: "شبیه‌سازهای اندروید و کروم‌بوک (29.8 MB)",
         dl_win_title: "ویندوز ۱۰ و ۱۱ (۶۴ بیتی - پرتابل)",
         dl_win_desc: "مبتنی بر Tauri 2 و Xray-core، پرتابل و بدون نیاز به پیش‌نیاز (.NET/VC++). شامل ۳ حالت System Proxy، بدون پروکسی (No Proxy) و درایور رسمی Wintun TUN.",
-        win_size: "شامل HotaruNet.exe، سرویس TUN و درایور Wintun (45.9 MB)",
+        win_size: "شامل HotaruNet.exe، سرویس TUN و درایور Wintun (45.8 MB)",
         win_steps: "<li>کل فایل ZIP را کامل در یک پوشه <strong>Extract</strong> کنید و <code>HotaruNet.exe</code> را اجرا نمایید (مستقیم از داخل WinRAR اجرا نکنید).</li><li><strong>بدون پیش‌نیاز نصبی:</strong> نیازی به <code>.NET</code> یا <code>VC++</code> نیست (فقط روی ویندوزهای دست‌کاری‌شده <em>Windows 10 LTSC / Lite</em> بدون Edge، پیش‌نیاز ۲ مگابایتی <em>WebView2 Runtime</em> مایکروسافت لازم است).</li><li>حالت‌های <strong>System Proxy</strong> و <strong>No Proxy</strong> بدون دسترسی ادمین کار می‌کنند و فقط حالت <strong>TUN</strong> نیاز به <em>Run as administrator</em> دارد.</li>",
-        hash_summary: "🔐 مشاهده کدهای اعتبارسنجی SHA-256 (نسخه v2.3.44)",
+        hash_summary: "🔐 مشاهده کدهای اعتبارسنجی SHA-256 (نسخه v2.3.45)",
         th_file: "فایل",
         eng_title: "چرا HotaruNet روی اینترنت‌های محدود پایدار است؟",
         eng_sub: "موتور Auto-Pilot به‌صورت خودکار با شرایط اپراتورهای همراه و ثابت (همراه اول، ایرانسل، شاتل، مخابرات و...) سازگار می‌شود.",
@@ -677,13 +677,13 @@
         abi_arm64: "Most modern smartphones (28.7 MB)",
         abi_uni_title: "Universal APK (All ABIs)",
         abi_uni: "Works on any Android device (66.6 MB)",
-        abi_v7: "Older 32-bit Android devices (29.2 MB)",
-        abi_x64: "Chromebooks & Android emulators (29.7 MB)",
+        abi_v7: "Older 32-bit Android devices (29.3 MB)",
+        abi_x64: "Chromebooks & Android emulators (29.8 MB)",
         dl_win_title: "Windows 10 / 11 (64-bit Portable)",
         dl_win_desc: "Built with Tauri 2 & Xray-core. Zero installation & zero .NET/VC++ prerequisites — includes System Proxy, No Proxy (local SOCKS5/HTTP ports), and Wintun TUN mode.",
-        win_size: "Includes HotaruNet.exe, TUN service & Wintun driver (45.9 MB)",
+        win_size: "Includes HotaruNet.exe, TUN service & Wintun driver (45.8 MB)",
         win_steps: "<li><strong>Extract the entire ZIP folder</strong> first, then run <code>HotaruNet.exe</code> (do not launch directly inside WinRAR/7-Zip).</li><li><strong>Zero prerequisites:</strong> No <code>.NET</code> or <code>VC++ Redistributable</code> required (only stripped <em>Windows 10 LTSC / Lite</em> builds without Edge need Microsoft's 2 MB <em>Edge WebView2 Runtime</em>).</li><li><strong>System Proxy</strong> and <strong>No Proxy</strong> work without Admin rights; <em>Run as administrator</em> is only needed for <strong>Wintun TUN</strong>.</li>",
-        hash_summary: "🔐 View SHA-256 Verification Checksums (v2.3.44)",
+        hash_summary: "🔐 View SHA-256 Verification Checksums (v2.3.45)",
         th_file: "File",
         eng_title: "Built for High-DPI Throttled Networks",
         eng_sub: "The Auto-Pilot engine dynamically adapts to cellular, ADSL, and fiber restrictions without manual tweaking.",

@@ -56,11 +56,55 @@ object SettingsManager {
      * @param context The application context.
      */
     private fun initRoutingRulesets(context: Context) {
-        val exist = MmkvManager.decodeRoutingRulesets()
-        if (exist.isNullOrEmpty()) {
-            val rulesetList = getPresetRoutingRulesets(context)
-            MmkvManager.encodeRoutingRulesets(rulesetList)
+        val current = MmkvManager.decodeRoutingRulesets().orEmpty()
+        val cleaned = sanitizeDefaultRoutingRules(current)
+        MmkvManager.encodeRoutingRulesets(cleaned.toMutableList())
+    }
+
+    internal fun isAutoRegionSplitRule(item: RulesetItem): Boolean {
+        val rem = item.remarks.orEmpty()
+        if (rem == "阻断udp443" || rem.startsWith("绕过中国") || rem == "代理Google") {
+            return true
         }
+        val hasRegionDomain = item.domain?.any {
+            it == "domain:ir" ||
+                it == "geosite:category-ir" ||
+                it == "geosite:ir" ||
+                it == "geosite:cn"
+        } == true
+        val hasRegionIp = item.ip?.any {
+            it == "geoip:ir" || it == "geoip:cn"
+        } == true
+        return hasRegionDomain || hasRegionIp
+    }
+
+    internal fun sanitizeDefaultRoutingRules(existing: List<RulesetItem>): List<RulesetItem> {
+        val kept = existing.filterNot(::isAutoRegionSplitRule).toMutableList()
+        val hasPrivateIp = kept.any { it.outboundTag == TAG_DIRECT && it.ip?.contains(GEOIP_PRIVATE) == true }
+        val hasPrivateDomain = kept.any { it.outboundTag == TAG_DIRECT && it.domain?.contains(GEOSITE_PRIVATE) == true }
+        if (!hasPrivateIp) {
+            kept.add(
+                0,
+                RulesetItem(
+                    remarks = "Direct LAN IP",
+                    outboundTag = TAG_DIRECT,
+                    ip = listOf(GEOIP_PRIVATE),
+                    enabled = true,
+                )
+            )
+        }
+        if (!hasPrivateDomain) {
+            kept.add(
+                if (kept.isEmpty()) 0 else 1.coerceAtMost(kept.size),
+                RulesetItem(
+                    remarks = "Direct LAN domains",
+                    outboundTag = TAG_DIRECT,
+                    domain = listOf(GEOSITE_PRIVATE),
+                    enabled = true,
+                )
+            )
+        }
+        return kept
     }
 
     /**
@@ -465,7 +509,7 @@ object SettingsManager {
         // HotaruNet defaults: Iran Network Invariants & Cyber-Anime Dark Mode
         MmkvManager.encodeSettings(AppConfig.PREF_IPV6_ENABLED, false)
         MmkvManager.encodeSettings(AppConfig.PREF_LOCAL_DNS_ENABLED, true)
-        MmkvManager.encodeSettings(AppConfig.PREF_FAKE_DNS_ENABLED, false)
+        MmkvManager.encodeSettings(AppConfig.PREF_FAKE_DNS_ENABLED, true)
         MmkvManager.encodeSettings(AppConfig.PREF_UI_MODE_NIGHT, "2")
         MmkvManager.encodeSettings(AppConfig.PREF_DYNAMIC_COLOR, false)
         MmkvManager.encodeSettings(AppConfig.PREF_VPN_DNS, AppConfig.DNS_VPN)
@@ -534,7 +578,7 @@ object SettingsManager {
                 MmkvManager.encodeSettings(AppConfig.CACHE_SUBSCRIPTION_ID, AppConfig.HOTARU_SUB_ID)
             }
 
-            val bundledSubVersion = 34
+            val bundledSubVersion = 35
             val currentSubVersion = MmkvManager.decodeSettingsInt("hotaru_bundled_sub_version", 0)
             val currentCount = MmkvManager.decodeServerList(AppConfig.HOTARU_SUB_ID).size
             // A small measured pool is valid; do not reimport it (and churn GUIDs) on every launch.

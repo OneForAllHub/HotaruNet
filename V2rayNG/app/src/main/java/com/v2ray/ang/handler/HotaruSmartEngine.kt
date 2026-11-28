@@ -21,10 +21,17 @@ import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.Utils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
@@ -32,10 +39,10 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.coroutines.runBlocking
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.resume
 
@@ -239,6 +246,7 @@ object HotaruSmartEngine {
     }
     private const val KEY_LAST_SCAN_MS = "hotaru_smart_last_scan_ms"
     private const val KEY_LAST_HARVEST_MS = "hotaru_smart_last_harvest_ms"
+    private const val KEY_LAST_FEED_SHA256 = "hotaru_last_feed_sha256"
     private const val KEY_ACTIVE_NET_KIND = "hotaru_smart_net_kind"
     private const val KEY_NET_SUMMARY_EN = "hotaru_net_summary_en"
     private const val KEY_NET_SUMMARY_FA = "hotaru_net_summary_fa"
@@ -352,7 +360,82 @@ object HotaruSmartEngine {
         val score: Long,
     )
 
+    enum class ConnectStage(
+        val stepIndex: Int,
+        val totalSteps: Int,
+        val titleFa: String,
+        val subtitleFa: String,
+        val titleEn: String,
+        val badgeTag: String,
+    ) {
+        IDLE(0, 4, "", "", "", ""),
+        WARM_RECONNECT(
+            3, 4,
+            "اتصال فوق‌سریع به مسیر تاییدشده...",
+            "تست سرعت لحظه‌ای بهترین سرور قبلی روی شبکه شما ⚡",
+            "Instant warm reconnect...",
+            "FAST",
+        ),
+        UPDATING_NODES(
+            1, 4,
+            "دریافت سریع نودهای تازه...",
+            "هوتارو داره جدیدترین سرورهای کلود رو همزمان چک می‌کنه ✨",
+            "Syncing fresh cloud nodes...",
+            "SYNC",
+        ),
+        TCP_SWEEP(
+            2, 4,
+            "اسکن نوری پینگ و پورت‌ها...",
+            "پیدا کردن بازترین مسیرها روی اینترنت شما ⚡",
+            "Sweeping fastest ports on your ISP...",
+            "PING",
+        ),
+        SPEED_TEST_WAVE_1(
+            3, 4,
+            "تست سرعت واقعی دانلود (موج ۱)...",
+            "سنجش پهنای باند واقعی روی برترین کاندیدها 🚀",
+            "Benchmarking real download speed (Wave 1)...",
+            "SPEED 1",
+        ),
+        SPEED_TEST_WAVE_2(
+            3, 4,
+            "تست عمیق سرعت دانلود (موج ۲)...",
+            "بررسی نودهای بیشتر برای بالاترین سرعت ممکن 🔥",
+            "Deep bandwidth verification (Wave 2)...",
+            "SPEED 2",
+        ),
+        SPEED_TEST_WAVE_3(
+            3, 4,
+            "جستجوی نهایی پرسرعت‌ترین مسیر...",
+            "تست آخرین گروه سرورها برای عبور از محدودیت 🛰️",
+            "Final wave high-throughput scan...",
+            "SPEED 3",
+        ),
+        CLOUD_RECOVERY(
+            3, 4,
+            "ریکاوری هوشمند از کلود...",
+            "دریافت و تست مسیرهای جایگزین ضد فیلتر 🛡️",
+            "Smart cloud recovery scan...",
+            "SHIELD",
+        ),
+        LOCKING_TUNNEL(
+            4, 4,
+            "قفل روی سریع‌ترین تانل!",
+            "آماده پرواز! در حال روشن کردن اتصال امن 🦋",
+            "Locking fastest tunnel & starting VPN!",
+            "LOCKED",
+        ),
+    }
+
+    private val _connectStageFlow = MutableStateFlow(ConnectStage.IDLE)
+    val connectStageFlow: StateFlow<ConnectStage> = _connectStageFlow.asStateFlow()
+
+    fun resetConnectStage() {
+        _connectStageFlow.value = ConnectStage.IDLE
+    }
+
     private val scanMutex = Mutex()
+    private val feedScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val blacklistedGuids = ConcurrentHashMap.newKeySet<String>()
     private val threadCounter = AtomicInteger(1)
     private val xrayExecutor = Executors.newCachedThreadPool { runnable ->
@@ -422,7 +505,7 @@ object HotaruSmartEngine {
         MmkvManager.encodeSettings(AppConfig.PREF_DOMESTIC_DNS, AppConfig.DNS_DIRECT)
         MmkvManager.encodeSettings(AppConfig.PREF_VPN_DNS, AppConfig.DNS_VPN)
         MmkvManager.encodeSettings(AppConfig.PREF_IPV6_ENABLED, false)
-        MmkvManager.encodeSettings(AppConfig.PREF_FAKE_DNS_ENABLED, false)
+        MmkvManager.encodeSettings(AppConfig.PREF_FAKE_DNS_ENABLED, true)
         // Enable smart per-protocol fragment: CoreOutboundBuilder strictly applies tlshello ONLY to standard TLS (skipping REALITY)
         MmkvManager.encodeSettings(AppConfig.PREF_FRAGMENT_ENABLED, true)
         MmkvManager.encodeSettings(AppConfig.PREF_FRAGMENT_PACKETS, "tlshello")
@@ -476,6 +559,9 @@ object HotaruSmartEngine {
             return
         }
         blacklistedGuids.add(guid)
+        MmkvManager.encodeSettings("hotaru_evidence_$guid", "")
+        val updated = getVerifiedServerGuids().filter { it != guid }
+        MmkvManager.encodeSettings(KEY_VERIFIED_GUIDS, JsonUtil.toJson(updated))
         MmkvManager.encodeServerTestDelayMillis(guid, -1L)
     }
 
@@ -497,7 +583,8 @@ object HotaruSmartEngine {
                 return@withLock 0
             }
 
-            val primaryUris = withTimeoutOrNull(14000L) {
+            val feedTimeoutMs = if (force && existingCount > 0) 3200L else 6000L
+            val primaryUris = withTimeoutOrNull(feedTimeoutMs) {
                 fetchPrimaryFeed()
             } ?: return@withLock 0
 
@@ -527,6 +614,22 @@ object HotaruSmartEngine {
             if (combined.isEmpty()) return@withLock 0
 
             val batchText = combined.joinToString("\n")
+            val feedHash = sha256Hex(batchText)
+            val prevFeedHash = MmkvManager.decodeSettingsString(KEY_LAST_FEED_SHA256)
+            if (!prevFeedHash.isNullOrEmpty() && prevFeedHash == feedHash && existingCount >= 20) {
+                val ts = System.currentTimeMillis()
+                MmkvManager.encodeSettings(KEY_LAST_HARVEST_MS, ts)
+                MmkvManager.decodeSubscription(AppConfig.HOTARU_SUB_ID)?.let { sub ->
+                    sub.lastUpdated = ts
+                    MmkvManager.encodeSubscription(AppConfig.HOTARU_SUB_ID, sub)
+                }
+                Log.i(
+                    LOG_TAG,
+                    "refreshSubscriptionSilently: feed unchanged (hash=${feedHash.take(8)}, nodes=$existingCount), skipped MMKV rewrite"
+                )
+                return@withLock 0
+            }
+
             val shouldReplace = existingCount == 0 || combined.size >= 5
             // importBatchConfig parses first and saveServerProfiles publishes only this subscription's index.
             // Never delete the last usable pool before parsing/import succeeds.
@@ -534,14 +637,16 @@ object HotaruSmartEngine {
             if (importedCount > 0) {
                 runCatching { HotaruDirectDpiManager.ensureDirectDpiProfile() }
                 runCatching { HotaruWarpManager.ensureDedicatedWarpProfile() }
-                MmkvManager.encodeSettings(KEY_LAST_HARVEST_MS, System.currentTimeMillis())
+                val ts = System.currentTimeMillis()
+                MmkvManager.encodeSettings(KEY_LAST_FEED_SHA256, feedHash)
+                MmkvManager.encodeSettings(KEY_LAST_HARVEST_MS, ts)
                 MmkvManager.decodeSubscription(AppConfig.HOTARU_SUB_ID)?.let { sub ->
-                    sub.lastUpdated = System.currentTimeMillis()
+                    sub.lastUpdated = ts
                     MmkvManager.encodeSubscription(AppConfig.HOTARU_SUB_ID, sub)
                 }
                 Log.i(
                     LOG_TAG,
-                    "refreshSubscriptionSilently: imported=$importedCount primary=${primaryUris.size}"
+                    "refreshSubscriptionSilently: imported=$importedCount primary=${primaryUris.size} hash=${feedHash.take(8)}"
                 )
             }
             importedCount
@@ -685,8 +790,62 @@ object HotaruSmartEngine {
         scanMutex.withLock {
             val networkProfile = optimizeForClientNetwork(appContext)
             val scanNetwork = evidenceNetwork(appContext)
-            // Synchronize with silent cloud harvest before reading GUIDs so GUIDs never churn mid-scan
-            runCatching { refreshSubscriptionSilently(appContext, force = forceRescan) }
+            val lastWinnerGuid = MmkvManager.decodeSettingsString(AppConfig.PREF_HOTARU_LAST_WINNER_GUID).orEmpty()
+
+            // Stage 0: Warm Fast-Reconnect (<2s) — probe last winner + top 2 cached verified nodes
+            // with a real 32 KiB payload (>=4000ms timeout) while refreshing cloud mirrors in the background.
+            if (!forceRescan) {
+                val existingGuids = loadCandidateGuids()
+                if (existingGuids.isNotEmpty()) {
+                    val warmGuids = (listOf(lastWinnerGuid) + getVerifiedServerGuids())
+                        .distinct()
+                        .filter { it.isNotEmpty() && it in existingGuids && it !in blacklistedGuids && MmkvManager.decodeServerConfig(it) != null }
+                        .take(3)
+
+                    if (warmGuids.isNotEmpty()) {
+                        _connectStageFlow.value = ConnectStage.WARM_RECONNECT
+                        feedScope.launch {
+                            runCatching { refreshSubscriptionSilently(appContext, force = false) }
+                        }
+                        runCatching { CoreNativeManager.initCoreEnv(appContext) }
+                        val warmBatch = buildCandidatePotentials(
+                            appContext = appContext,
+                            guids = warmGuids,
+                            networkProfile = networkProfile,
+                            scanNetwork = scanNetwork,
+                            nowMs = System.currentTimeMillis(),
+                            skipFragile = false,
+                        )
+                        val warmWinners = verifyCandidateBatch(
+                            appContext = appContext,
+                            batch = warmBatch,
+                            scanNetwork = scanNetwork,
+                            payloadUrl = STAGE3_PAYLOAD_URL,
+                            timeoutMs = 4500L,
+                            stageLabel = "WarmReconnect",
+                        )
+                        val fastWarm = warmWinners.filter {
+                            HotaruHealthPolicy.isFast(PAYLOAD_PROBE_BYTES, it.delayMs)
+                        }
+                        if (fastWarm.isNotEmpty() && (scanNetwork.isEmpty() || evidenceNetwork(appContext) == scanNetwork)) {
+                            _connectStageFlow.value = ConnectStage.LOCKING_TUNNEL
+                            delay(220L)
+                            return@withLock commitVerifiedSelection(fastWarm, networkProfile, "WarmReconnect")
+                        }
+                    }
+                }
+            }
+
+            _connectStageFlow.value = ConnectStage.UPDATING_NODES
+            val stage1StartMs = android.os.SystemClock.elapsedRealtime()
+            // Always perform a bounded fast feed sync first on cold Connect so fresh cloud nodes enter immediately
+            runCatching {
+                withTimeoutOrNull(3500L) {
+                    refreshSubscriptionSilently(appContext, force = true)
+                }
+            }
+            val stage1Remain = 850L - (android.os.SystemClock.elapsedRealtime() - stage1StartMs)
+            if (stage1Remain > 0L) delay(stage1Remain)
             // Ensure dedicated Cloudflare WARP is initialized in pool
             runCatching { HotaruWarpManager.ensureDedicatedWarpProfile() }
             var guids = loadCandidateGuids()
@@ -700,14 +859,16 @@ object HotaruSmartEngine {
             }
             if (guids.isEmpty()) {
                 Log.w(LOG_TAG, "selectBestServer aborted: no servers available")
+                _connectStageFlow.value = ConnectStage.IDLE
                 return@withLock null
             }
 
             runCatching { CoreNativeManager.initCoreEnv(appContext) }
                 .onFailure { LogUtil.w(AppConfig.TAG, "CoreNativeManager.initCoreEnv failed during smart scan", it) }
 
+            val minKeep = guids.size.coerceAtMost(3)
             val nonBlacklistedGuids = guids.filter { it !in blacklistedGuids }.let {
-                if (it.size < 10) {
+                if (it.size < minKeep) {
                     blacklistedGuids.clear()
                     guids
                 } else it
@@ -723,23 +884,41 @@ object HotaruSmartEngine {
                         val cachedProfile = MmkvManager.decodeServerConfig(currentSelected)
                         val cachedEv = evidence(appContext, currentSelected)
                         val cachedQuality = quality(appContext, currentSelected, nowMs)
-                        if (cachedProfile != null && cachedEv != null && cachedEv.network == scanNetwork && cachedQuality.latestFast) {
-                            val delayMs = cachedEv.latencyMs.takeIf { it > 0L } ?: cachedEv.elapsedMs.coerceAtLeast(1L)
-                            Log.i(LOG_TAG, "selectBestServer: reusing fresh verified winner guid=$currentSelected delay=${delayMs}ms net=${networkProfile.kind.name}")
-                            MmkvManager.setSelectServer(currentSelected)
-                            return@withLock SelectionResult(
-                                guid = currentSelected,
-                                remarks = cachedProfile.remarks.orEmpty(),
-                                delayMs = delayMs,
-                                verifiedGuids = cachedVerified,
-                                networkProfile = networkProfile,
-                            )
+                        if (cachedProfile != null &&
+                            cachedEv != null &&
+                            cachedEv.network == scanNetwork &&
+                            cachedQuality.latestFast &&
+                            (MmkvManager.decodeServerAffiliationInfo(currentSelected)?.testDelayMillis ?: 0L) > 0L
+                        ) {
+                            _connectStageFlow.value = ConnectStage.TCP_SWEEP
+                            val host = cachedProfile.server?.trim().orEmpty()
+                            val port = cachedProfile.serverPort?.toIntOrNull() ?: AppConfig.DEFAULT_PORT
+                            val tcpReachable = isUdpOrComplexType(cachedProfile.configType) ||
+                                SpeedtestManager.socketConnectTime(host, port, 900) >= 0L
+                            if (tcpReachable) {
+                                delay(400L)
+                                val delayMs = cachedEv.latencyMs.takeIf { it > 0L } ?: cachedEv.elapsedMs.coerceAtLeast(1L)
+                                Log.i(LOG_TAG, "selectBestServer: reusing fresh verified winner guid=$currentSelected delay=${delayMs}ms net=${networkProfile.kind.name}")
+                                MmkvManager.setSelectServer(currentSelected)
+                                MmkvManager.encodeSettings(AppConfig.PREF_HOTARU_LAST_WINNER_GUID, currentSelected)
+                                _connectStageFlow.value = ConnectStage.LOCKING_TUNNEL
+                                delay(350L)
+                                return@withLock SelectionResult(
+                                    guid = currentSelected,
+                                    remarks = cachedProfile.remarks.orEmpty(),
+                                    delayMs = delayMs,
+                                    verifiedGuids = cachedVerified,
+                                    networkProfile = networkProfile,
+                                )
+                            }
                         }
                     }
                 }
             }
 
             // Stage 1: Score all candidates by user's active network profile + run concurrent TCP sweep across protocols
+            _connectStageFlow.value = ConnectStage.TCP_SWEEP
+            val stage2StartMs = android.os.SystemClock.elapsedRealtime()
             val rankedQueue = rankTcpReachableCandidates(
                 appContext = appContext,
                 guids = nonBlacklistedGuids,
@@ -747,6 +926,8 @@ object HotaruSmartEngine {
                 scanNetwork = scanNetwork,
                 nowMs = nowMs,
             )
+            val stage2Remain = 850L - (android.os.SystemClock.elapsedRealtime() - stage2StartMs)
+            if (stage2Remain > 0L) delay(stage2Remain)
 
             Log.i(
                 LOG_TAG,
@@ -755,18 +936,19 @@ object HotaruSmartEngine {
 
             val attemptedGuids = HashSet<String>(32)
             val batchStages = listOf(
-                Triple("Batch 1", STAGE3_PAYLOAD_URL, STAGE3_CANDIDATES),
-                Triple("Batch 2", STAGE3_FALLBACK_PAYLOAD_URL, STAGE3_CANDIDATES),
-                Triple("Batch 3", STAGE3_PAYLOAD_URL, STAGE3_CANDIDATES),
+                Triple("Batch 1", STAGE3_PAYLOAD_URL, ConnectStage.SPEED_TEST_WAVE_1),
+                Triple("Batch 2", STAGE3_FALLBACK_PAYLOAD_URL, ConnectStage.SPEED_TEST_WAVE_2),
+                Triple("Batch 3", STAGE3_PAYLOAD_URL, ConnectStage.SPEED_TEST_WAVE_3),
             )
-            for ((stageName, payloadUrl, batchSize) in batchStages) {
+            for ((stageName, payloadUrl, stageEnum) in batchStages) {
                 val batch = buildStratifiedCandidateBatch(
                     rankedQueue.filter { it.guid !in attemptedGuids },
-                    targetSize = batchSize,
+                    targetSize = STAGE3_CANDIDATES,
                 )
                 if (batch.isEmpty()) break
                 batch.forEach { attemptedGuids.add(it.guid) }
 
+                _connectStageFlow.value = stageEnum
                 val verified = verifyCandidateBatch(
                     appContext = appContext,
                     batch = batch,
@@ -775,8 +957,13 @@ object HotaruSmartEngine {
                     timeoutMs = STAGE3_TIMEOUT_MS,
                     stageLabel = stageName,
                 )
-                if (scanNetwork.isNotEmpty() && evidenceNetwork(appContext) != scanNetwork) return@withLock null
+                if (scanNetwork.isNotEmpty() && evidenceNetwork(appContext) != scanNetwork) {
+                    _connectStageFlow.value = ConnectStage.IDLE
+                    return@withLock null
+                }
                 if (verified.isNotEmpty()) {
+                    _connectStageFlow.value = ConnectStage.LOCKING_TUNNEL
+                    delay(950L)
                     return@withLock commitVerifiedSelection(verified, networkProfile, stageName)
                 }
                 Log.w(LOG_TAG, "$stageName failed; advancing to next stratified verification wave")
@@ -784,6 +971,7 @@ object HotaruSmartEngine {
 
             // Cloud Recovery: Refresh subscription silently and run TCP + stratified protocol verification on new pool
             Log.w(LOG_TAG, "Top waves failed; refreshing subscription silently from cloud feed")
+            _connectStageFlow.value = ConnectStage.CLOUD_RECOVERY
             runCatching { refreshSubscriptionSilently(appContext, force = true) }
             val freshGuids = loadCandidateGuids().filter { candGuid ->
                 candGuid !in blacklistedGuids && candGuid !in attemptedGuids
@@ -805,8 +993,13 @@ object HotaruSmartEngine {
                     timeoutMs = STAGE3_TIMEOUT_MS,
                     stageLabel = "CloudRecovery",
                 )
-                if (scanNetwork.isNotEmpty() && evidenceNetwork(appContext) != scanNetwork) return@withLock null
+                if (scanNetwork.isNotEmpty() && evidenceNetwork(appContext) != scanNetwork) {
+                    _connectStageFlow.value = ConnectStage.IDLE
+                    return@withLock null
+                }
                 if (freshWinners.isNotEmpty()) {
+                    _connectStageFlow.value = ConnectStage.LOCKING_TUNNEL
+                    delay(950L)
                     return@withLock commitVerifiedSelection(freshWinners, networkProfile, "CloudRecovery")
                 }
             }
@@ -822,11 +1015,14 @@ object HotaruSmartEngine {
                     val profile = MmkvManager.decodeServerConfig(warpGuid)
                     persistVerifiedGuids(listOf(warpGuid), System.currentTimeMillis())
                     MmkvManager.setSelectServer(warpGuid)
+                    MmkvManager.encodeSettings(AppConfig.PREF_HOTARU_LAST_WINNER_GUID, warpGuid)
                     MmkvManager.encodeServerTestDelayMillis(warpGuid, delay)
                     Log.i(LOG_TAG, "selectBestServer: Clean WARP fallback WON on ${bestEndpoint.first}:${bestEndpoint.second}: delay=${delay}ms bytes=$bytes")
+                    _connectStageFlow.value = ConnectStage.LOCKING_TUNNEL
+                    delay(950L)
                     return@withLock SelectionResult(
                         guid = warpGuid,
-                        remarks = profile?.remarks ?: "HotaruNet #000 | 🇪🇺 Cloudflare WARP",
+                        remarks = profile?.remarks ?: "HotaruNet #000 | Cloudflare WARP",
                         delayMs = delay,
                         verifiedGuids = listOf(warpGuid),
                         networkProfile = networkProfile,
@@ -836,6 +1032,7 @@ object HotaruSmartEngine {
 
             // Never fall back to unverified or dead servers!
             Log.w(LOG_TAG, "selectBestServer: all candidates failed live verification")
+            _connectStageFlow.value = ConnectStage.IDLE
             return@withLock null
         }
     }
@@ -971,6 +1168,7 @@ object HotaruSmartEngine {
         val verifiedGuids = rankedWinners.map { it.guid }
         persistVerifiedGuids(verifiedGuids, System.currentTimeMillis())
         MmkvManager.setSelectServer(winner.guid)
+        MmkvManager.encodeSettings(AppConfig.PREF_HOTARU_LAST_WINNER_GUID, winner.guid)
         MmkvManager.encodeServerTestDelayMillis(winner.guid, winner.delayMs)
         Log.i(
             LOG_TAG,
@@ -1143,6 +1341,7 @@ object HotaruSmartEngine {
         )
         persistVerifiedGuids(remainingQueue, System.currentTimeMillis())
         MmkvManager.setSelectServer(verifiedNextGuid)
+        MmkvManager.encodeSettings(AppConfig.PREF_HOTARU_LAST_WINNER_GUID, verifiedNextGuid)
         if (verifiedDelay > 0L) {
             MmkvManager.encodeServerTestDelayMillis(verifiedNextGuid, verifiedDelay)
         }
@@ -1589,14 +1788,14 @@ object HotaruSmartEngine {
         return content?.trim().orEmpty()
     }
 
-    private fun fetchPrimaryFeed(): List<String> {
+    private suspend fun fetchPrimaryFeed(): List<String> {
         val mirrors = HotaruCrypto.getFeedMirrors()
         val requests = buildList {
-            // 1. GitHub Contents API with auth token (real-time commit state; never suffers 24m CDN purge lag)
+            // 1. GitHub Contents API with auth token (real-time commit state; never suffers CDN purge lag)
             add(
                 "api" to UrlContentRequest(
                     url = AppConfig.HOTARU_SUB_URL,
-                    timeout = 3500,
+                    timeout = 2600,
                     requestHeaders = feedAuthHeaders(),
                 )
             )
@@ -1605,7 +1804,7 @@ object HotaruSmartEngine {
                 add(
                     "mirror-$idx" to UrlContentRequest(
                         url = mirrorUrl,
-                        timeout = if (idx == 0) 3500 else 4000,
+                        timeout = if (idx == 0) 2600 else 2800,
                     )
                 )
             }
@@ -1613,26 +1812,51 @@ object HotaruSmartEngine {
             add(
                 "api-pub" to UrlContentRequest(
                     url = AppConfig.HOTARU_SUB_URL,
-                    timeout = 4000,
+                    timeout = 2800,
                     requestHeaders = "{\"Accept\":\"application/vnd.github+json\"}",
                 )
             )
         }
 
-        for ((label, request) in requests) {
-            val list = runCatching {
-                val raw = extractApiContent(HttpUtil.getUrlContentWithUserAgent(request))
-                if (raw.isEmpty()) return@runCatching emptyList<String>()
-                val decoded = HotaruCrypto.decryptSubscriptionPayload(raw)
-                    ?: HotaruCrypto.decryptSubscriptionPayload(Utils.decode(raw))
-                    ?: Utils.decode(raw)
-                extractConfigUris(decoded)
-            }.getOrDefault(emptyList())
-
-            if (list.isNotEmpty()) {
-                Log.i(LOG_TAG, "fetchPrimaryFeed: retrieved ${list.size} nodes via $label")
-                return list
+        val ch = Channel<Pair<String, List<String>>?>(capacity = requests.size)
+        val won = AtomicBoolean(false)
+        val jobs = requests.mapIndexed { idx, (label, request) ->
+            val staggerMs = if (idx <= 1) 0L else 350L
+            feedScope.launch {
+                if (staggerMs > 0L) delay(staggerMs)
+                if (won.get()) {
+                    ch.trySend(null)
+                    return@launch
+                }
+                val list = runCatching {
+                    val raw = extractApiContent(HttpUtil.getUrlContentWithUserAgent(request))
+                    if (raw.isEmpty()) return@runCatching emptyList<String>()
+                    val decoded = HotaruCrypto.decryptSubscriptionPayload(raw)
+                        ?: HotaruCrypto.decryptSubscriptionPayload(Utils.decode(raw))
+                        ?: Utils.decode(raw)
+                    extractConfigUris(decoded)
+                }.getOrDefault(emptyList())
+                if (list.isNotEmpty() && won.compareAndSet(false, true)) {
+                    ch.trySend(label to list)
+                } else {
+                    ch.trySend(null)
+                }
             }
+        }
+
+        try {
+            repeat(requests.size) {
+                val res = ch.receive()
+                if (res != null) {
+                    jobs.forEach { it.cancel() }
+                    Log.i(LOG_TAG, "fetchPrimaryFeed: retrieved ${res.second.size} nodes via ${res.first}")
+                    return res.second
+                }
+            }
+        } finally {
+            won.set(true)
+            jobs.forEach { it.cancel() }
+            ch.close()
         }
         return emptyList()
     }
@@ -1664,9 +1888,9 @@ object HotaruSmartEngine {
     }
 
     private const val EXCLUDED_SELF_HOST_SHA256 =
-        "fc109eca8a9fdc5030c45959283981fdcd98edab442853eae242787309754e7e"
+        "2a73476777f0872d13ab8f79474ce5a394045371058f18381b145f7589fd0f99"
     private const val EXCLUDED_SELF_NET24_SHA256 =
-        "1280a69f91a000a4c8a0c6672aa9626d2160f6b694f1f50688522620d6a0e334"
+        "c58b3c1a9b6300df2123948e4a193dbba47d7a1de8ace6a9afa5826eed953564"
 
     private fun sha256Hex(value: String): String {
         val digest = MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8))

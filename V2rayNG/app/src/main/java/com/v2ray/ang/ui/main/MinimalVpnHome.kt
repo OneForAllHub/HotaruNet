@@ -1,6 +1,10 @@
 package com.v2ray.ang.ui.main
 
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
+import android.os.SystemClock
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -11,6 +15,10 @@ import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -29,16 +37,25 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.text.style.TextAlign
@@ -58,6 +75,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -84,18 +102,25 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.BuildConfig
 import com.v2ray.ang.R
+import com.v2ray.ang.core.LauncherManager
 import com.v2ray.ang.dto.CheckUpdateResult
 import com.v2ray.ang.enums.Language
 import com.v2ray.ang.extension.concatUrl
 import com.v2ray.ang.handler.AppLocaleManager
+import com.v2ray.ang.handler.HotaruApkUpdater
 import com.v2ray.ang.handler.HotaruCommunityCounter
 import com.v2ray.ang.handler.HotaruDirectDpiManager
 import com.v2ray.ang.handler.HotaruSmartEngine
 import com.v2ray.ang.handler.HotaruWarpManager
 import com.v2ray.ang.handler.MmkvManager
+import com.v2ray.ang.handler.SettingsManager
 import com.v2ray.ang.handler.UpdateCheckerManager
+import com.v2ray.ang.helper.MessageHelper
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.PI
@@ -107,7 +132,8 @@ private val DeepCyberSurface = Color(0xFF151828)
 private val NeonCyan = Color(0xFF00E5FF)
 private val HotaruMint = Color(0xFF00F5D4)
 private val CyberMagenta = Color(0xFFFF2A85)
-private val ConnectingViolet = Color(0xFFA855F7)
+private val SakuraPink = Color(0xFFFF6EC7)
+private val ConnectingViolet = Color(0xFFB366FF)
 private val WarmAmber = Color(0xFFFFB703)
 private val MutedText = Color(0xFF8B93B3)
 private val TelegramBlue = Color(0xFF38BDF8)
@@ -194,10 +220,32 @@ fun MinimalVpnHome(
     }
 
     val isBusy = !isRunning && (isOptimizing || isConnectingPending)
+    val connectStage by HotaruSmartEngine.connectStageFlow.collectAsStateWithLifecycle()
+    LaunchedEffect(isBusy, isRunning) {
+        if (!isBusy && !isRunning) {
+            HotaruSmartEngine.resetConnectStage()
+        }
+    }
+    val effectiveConnectStage = if (connectStage != HotaruSmartEngine.ConnectStage.IDLE) {
+        connectStage
+    } else if (isOptimizing) {
+        HotaruSmartEngine.ConnectStage.UPDATING_NODES
+    } else {
+        HotaruSmartEngine.ConnectStage.LOCKING_TUNNEL
+    }
 
     var connectionDurationSeconds by remember { mutableLongStateOf(0L) }
     var sessionDownBytes by remember { mutableLongStateOf(0L) }
     var sessionUpBytes by remember { mutableLongStateOf(0L) }
+    var isSwitchingRoute by remember { mutableStateOf(false) }
+    var switchBaselineGuid by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(uiState.selectedGuid) {
+        if (isSwitchingRoute && uiState.selectedGuid != switchBaselineGuid) {
+            isSwitchingRoute = false
+        }
+    }
+
     LaunchedEffect(isRunning) {
         if (isRunning) {
             val startTime = System.currentTimeMillis()
@@ -205,14 +253,28 @@ fun MinimalVpnHome(
             val initRx = android.net.TrafficStats.getUidRxBytes(myUid).takeIf { it != android.net.TrafficStats.UNSUPPORTED.toLong() } ?: 0L
             val initTx = android.net.TrafficStats.getUidTxBytes(myUid).takeIf { it != android.net.TrafficStats.UNSUPPORTED.toLong() } ?: 0L
             while (true) {
-                connectionDurationSeconds = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime)
-                val curRx = android.net.TrafficStats.getUidRxBytes(myUid).takeIf { it != android.net.TrafficStats.UNSUPPORTED.toLong() } ?: 0L
-                val curTx = android.net.TrafficStats.getUidTxBytes(myUid).takeIf { it != android.net.TrafficStats.UNSUPPORTED.toLong() } ?: 0L
-                sessionDownBytes = maxOf(0L, curRx - initRx)
-                sessionUpBytes = maxOf(0L, curTx - initTx)
+                mainViewModel.refreshSelectedGuid()
+                val daemonStart = MmkvManager.decodeSettingsLong(AppConfig.PREF_HOTARU_LIVE_START_ELAPSED_MS, 0L)
+                connectionDurationSeconds = if (daemonStart > 0L) {
+                    ((SystemClock.elapsedRealtime() - daemonStart) / 1000L).coerceAtLeast(0L)
+                } else {
+                    TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime)
+                }
+                val daemonDown = MmkvManager.decodeSettingsLong(AppConfig.PREF_HOTARU_LIVE_DOWN_BYTES, 0L)
+                val daemonUp = MmkvManager.decodeSettingsLong(AppConfig.PREF_HOTARU_LIVE_UP_BYTES, 0L)
+                if ((daemonDown + daemonUp) > 0L) {
+                    sessionDownBytes = daemonDown
+                    sessionUpBytes = daemonUp
+                } else {
+                    val curRx = android.net.TrafficStats.getUidRxBytes(myUid).takeIf { it != android.net.TrafficStats.UNSUPPORTED.toLong() } ?: 0L
+                    val curTx = android.net.TrafficStats.getUidTxBytes(myUid).takeIf { it != android.net.TrafficStats.UNSUPPORTED.toLong() } ?: 0L
+                    sessionDownBytes = maxOf(0L, curRx - initRx)
+                    sessionUpBytes = maxOf(0L, curTx - initTx)
+                }
                 delay(1000L)
             }
         } else {
+            isSwitchingRoute = false
             connectionDurationSeconds = 0L
             sessionDownBytes = 0L
             sessionUpBytes = 0L
@@ -251,6 +313,9 @@ fun MinimalVpnHome(
     val onOpenTelegram = remember(onAction) {
         { onAction(MainAction.OpenSubscriptionLink(AppConfig.TG_CHANNEL_URL)) }
     }
+    val onOpenCreatorBot = remember(onAction) {
+        { onAction(MainAction.OpenSubscriptionLink(AppConfig.TG_CREATOR_BOT_URL)) }
+    }
     val onOpenUrl = remember(onAction) {
         { url: String -> onAction(MainAction.OpenSubscriptionLink(url)) }
     }
@@ -262,9 +327,18 @@ fun MinimalVpnHome(
         mutableStateOf(!MmkvManager.decodeSettingsBool(AppConfig.PREF_FIRST_RUN_LANGUAGE_CHOSEN, false))
     }
     var showAboutDialog by rememberSaveable { mutableStateOf(false) }
+    var showPerAppDialog by rememberSaveable { mutableStateOf(false) }
+    var bypassedAppsCount by remember {
+        mutableStateOf(
+            if (MmkvManager.decodeSettingsBool(AppConfig.PREF_PER_APP_PROXY, false)) {
+                MmkvManager.decodeSettingsStringSet(AppConfig.PREF_PER_APP_PROXY_SET)?.size ?: 0
+            } else 0
+        )
+    }
     var savedUpdateVersion by rememberSaveable { mutableStateOf<String?>(null) }
     var savedUpdateNotes by rememberSaveable { mutableStateOf("") }
     var savedUpdateUrl by rememberSaveable { mutableStateOf<String?>(null) }
+    var savedUpdateDownloadUrl by rememberSaveable { mutableStateOf<String?>(null) }
     var lastStoppedAtMs by rememberSaveable { mutableLongStateOf(0L) }
     var updateCheckCompleted by rememberSaveable { mutableStateOf(false) }
     var showFirstConnectDialog by rememberSaveable { mutableStateOf(false) }
@@ -277,8 +351,10 @@ fun MinimalVpnHome(
             savedUpdateVersion = result.latestVersion
             savedUpdateNotes = result.releaseNotes.orEmpty()
             savedUpdateUrl = result.releasePageUrl ?: repoUrl.concatUrl("releases/latest")
+            savedUpdateDownloadUrl = result.downloadUrl
         } else if (result.checkedOk) {
             savedUpdateVersion = null
+            savedUpdateDownloadUrl = null
         }
     }
 
@@ -352,8 +428,10 @@ fun MinimalVpnHome(
             currentVersion = BuildConfig.VERSION_NAME,
             latestVersion = targetVer,
             releaseNotes = savedUpdateNotes,
+            directApkUrl = savedUpdateDownloadUrl,
+            isVpnRunning = isRunning,
             onToggleLanguage = onToggleLanguage,
-            onDownloadClick = {
+            onOpenBrowserClick = {
                 savedUpdateVersion = null
                 onOpenUrl(releasesUrl)
             },
@@ -367,6 +445,7 @@ fun MinimalVpnHome(
             onToggleLanguage = onToggleLanguage,
             onOpenGitHub = { onOpenUrl(repoUrl) },
             onOpenTelegram = onOpenTelegram,
+            onOpenCreatorBot = onOpenCreatorBot,
             onDismiss = { showFirstConnectDialog = false },
         )
     }
@@ -378,7 +457,20 @@ fun MinimalVpnHome(
             onToggleLanguage = onToggleLanguage,
             onOpenGitHub = { onOpenUrl(repoUrl) },
             onOpenTelegram = onOpenTelegram,
+            onOpenCreatorBot = onOpenCreatorBot,
             onDismiss = { showAboutDialog = false },
+        )
+    }
+
+    if (showPerAppDialog) {
+        HotaruPerAppBypassDialog(
+            isPersian = isPersian,
+            isVpnRunning = isRunning,
+            onSaved = { count ->
+                bypassedAppsCount = count
+                showPerAppDialog = false
+            },
+            onDismiss = { showPerAppDialog = false },
         )
     }
 
@@ -397,7 +489,7 @@ fun MinimalVpnHome(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(contentPadding)
-                .padding(horizontal = 20.dp, vertical = 18.dp),
+                .padding(horizontal = 20.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -408,11 +500,18 @@ fun MinimalVpnHome(
             )
 
             Column(
+                modifier = Modifier.weight(1f),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
             ) {
                 val statusLabel = when {
-                    isRunning -> if (isPersian) "متصل" else "CONNECTED"
+                    isRunning -> {
+                        val pingPart = if (livePing > 0) {
+                            val num = if (isPersian) toPersianDigits(livePing.toString()) else livePing.toString()
+                            " • ${num}ms"
+                        } else ""
+                        (if (isPersian) "متصل" else "CONNECTED") + pingPart
+                    }
                     isOptimizing -> if (isPersian) "در حال انتخاب خودکار مسیر..." else "OPTIMIZING ROUTE..."
                     isBusy -> if (isPersian) "در حال اتصال..." else "CONNECTING..."
                     else -> if (isPersian) "آماده اتصال هوشمند" else "SMART AUTO-PILOT READY"
@@ -465,6 +564,7 @@ fun MinimalVpnHome(
                     isOptimizing = isOptimizing,
                     isConnecting = isBusy,
                     isPersian = isPersian,
+                    connectStage = effectiveConnectStage,
                     onClick = onToggleConnection,
                 )
 
@@ -482,69 +582,120 @@ fun MinimalVpnHome(
                             )
                         )
 
-                        // Real-time Session Traffic Counter
-                        Surface(
-                            shape = RoundedCornerShape(50),
-                            color = DeepCyberSurface.copy(alpha = 0.85f),
-                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)),
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            // Real-time Session Traffic Counter (keep LTR so unit "KB"/"MB" never reverses in Persian RTL)
+                            Surface(
+                                shape = RoundedCornerShape(50),
+                                color = DeepCyberSurface.copy(alpha = 0.85f),
+                                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)),
+                            ) {
+                                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 13.dp, vertical = 5.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(9.dp),
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        ) {
+                                            Text(
+                                                text = "↓",
+                                                style = MaterialTheme.typography.labelMedium.copy(
+                                                    color = HotaruMint,
+                                                    fontWeight = FontWeight.ExtraBold,
+                                                )
+                                            )
+                                            Text(
+                                                text = formatTraffic(sessionDownBytes),
+                                                style = MaterialTheme.typography.labelMedium.copy(
+                                                    color = Color.White.copy(alpha = 0.92f),
+                                                    fontWeight = FontWeight.SemiBold,
+                                                )
+                                            )
+                                        }
+                                        Box(
+                                            modifier = Modifier
+                                                .size(3.dp)
+                                                .clip(CircleShape)
+                                                .background(MutedText.copy(alpha = 0.6f))
+                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        ) {
+                                            Text(
+                                                text = "↑",
+                                                style = MaterialTheme.typography.labelMedium.copy(
+                                                    color = CyberMagenta,
+                                                    fontWeight = FontWeight.ExtraBold,
+                                                )
+                                            )
+                                            Text(
+                                                text = formatTraffic(sessionUpBytes),
+                                                style = MaterialTheme.typography.labelMedium.copy(
+                                                    color = Color.White.copy(alpha = 0.92f),
+                                                    fontWeight = FontWeight.SemiBold,
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 1-Tap Live Route Switcher
+                            Surface(
+                                shape = RoundedCornerShape(50),
+                                color = NeonCyan.copy(alpha = if (isSwitchingRoute) 0.24f else 0.14f),
+                                border = BorderStroke(1.dp, NeonCyan.copy(alpha = 0.50f)),
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(50))
+                                    .clickable(enabled = !isSwitchingRoute) {
+                                        switchBaselineGuid = uiState.selectedGuid
+                                        isSwitchingRoute = true
+                                        MessageHelper.sendMsg2Service(context, AppConfig.MSG_STATE_SWITCH_ROUTE, "")
+                                        uiCoroutineScope.launch {
+                                            delay(4500L)
+                                            isSwitchingRoute = false
+                                        }
+                                    },
                             ) {
                                 Row(
+                                    modifier = Modifier.padding(horizontal = 11.dp, vertical = 5.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 ) {
                                     Text(
-                                        text = "↓",
-                                        style = MaterialTheme.typography.labelMedium.copy(
-                                            color = HotaruMint,
-                                            fontWeight = FontWeight.ExtraBold,
-                                        )
+                                        text = "🔄",
+                                        style = MaterialTheme.typography.labelSmall,
                                     )
                                     Text(
-                                        text = formatTraffic(sessionDownBytes),
+                                        text = if (isSwitchingRoute) {
+                                            if (isPersian) "تعویض..." else "Switching..."
+                                        } else {
+                                            if (isPersian) "تعویض مسیر" else "Switch Route"
+                                        },
+                                        maxLines = 1,
                                         style = MaterialTheme.typography.labelMedium.copy(
-                                            color = Color.White.copy(alpha = 0.92f),
-                                            fontWeight = FontWeight.SemiBold,
-                                        )
-                                    )
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .size(3.dp)
-                                        .clip(CircleShape)
-                                        .background(MutedText.copy(alpha = 0.6f))
-                                )
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                ) {
-                                    Text(
-                                        text = "↑",
-                                        style = MaterialTheme.typography.labelMedium.copy(
-                                            color = CyberMagenta,
-                                            fontWeight = FontWeight.ExtraBold,
-                                        )
-                                    )
-                                    Text(
-                                        text = formatTraffic(sessionUpBytes),
-                                        style = MaterialTheme.typography.labelMedium.copy(
-                                            color = Color.White.copy(alpha = 0.92f),
-                                            fontWeight = FontWeight.SemiBold,
-                                        )
+                                            color = NeonCyan,
+                                            fontWeight = FontWeight.Bold,
+                                        ),
                                     )
                                 }
                             }
                         }
                     }
+                } else if (isBusy) {
+                    HotaruConnectingStageCard(
+                        stage = effectiveConnectStage,
+                        isPersian = isPersian,
+                    )
                 } else {
                     Text(
-                        text = if (isOptimizing) {
-                            if (isPersian) "تست موازی پایداری و سرعت..." else "Testing & selecting fastest tunnel..."
-                        } else if (isPersian) {
+                        text = if (isPersian) {
                             "برای انتخاب خودکار سریع‌ترین سرور لمس کنید"
                         } else {
                             "Tap once for autonomous fastest connection"
@@ -558,8 +709,14 @@ fun MinimalVpnHome(
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                HotaruQuickControlsRow(
+                    isPersian = isPersian,
+                    bypassedAppsCount = bypassedAppsCount,
+                    onOpenPerAppBypass = { showPerAppDialog = true },
+                )
+
                 HotaruSmartStatusCard(
                     isRunning = isRunning,
                     isOptimizing = isOptimizing,
@@ -572,6 +729,7 @@ fun MinimalVpnHome(
                 HotaruFooterActionsBar(
                     isPersian = isPersian,
                     onOpenAbout = { showAboutDialog = true },
+                    onOpenCreatorBot = onOpenCreatorBot,
                     onOpenGitHub = { onOpenUrl(repoUrl) },
                 )
             }
@@ -809,12 +967,12 @@ private fun CyberAnimeBackdrop(
         DefaultFireflies.forEach { seed ->
             val cycle = (seed.startYFraction - driftProgress * seed.speedFactor)
             val wrappedY = ((cycle % 1f) + 1f) % 1f
-            val sway = sin((driftProgress * 2f * PI + seed.phase).toDouble()).toFloat() * 18f
+            val sway = sin(driftProgress * 2f * PI + seed.phase).toFloat() * 18f
             val pos = Offset(
                 x = (seed.xFraction * w + sway).coerceIn(0f, w),
                 y = wrappedY * h,
             )
-            val flicker = 0.45f + 0.55f * (0.5f + 0.5f * cos((driftProgress * 4f * PI + seed.phase).toDouble()).toFloat())
+            val flicker = 0.45f + 0.55f * (0.5f + 0.5f * cos(driftProgress * 4f * PI + seed.phase).toFloat())
             val rPx = seed.radiusDp.dp.toPx()
             drawCircle(
                 brush = Brush.radialGradient(
@@ -844,12 +1002,13 @@ private fun NeonConnectButton(
     isOptimizing: Boolean,
     isConnecting: Boolean,
     isPersian: Boolean,
+    connectStage: HotaruSmartEngine.ConnectStage = HotaruSmartEngine.ConnectStage.IDLE,
     onClick: () -> Unit,
 ) {
     val ringColor by animateColorAsState(
         targetValue = when {
             isRunning -> HotaruMint
-            isConnecting -> ConnectingViolet
+            isConnecting -> NeonCyan
             else -> CyberMagenta
         },
         animationSpec = tween(500),
@@ -858,7 +1017,7 @@ private fun NeonConnectButton(
     val secondaryGlow by animateColorAsState(
         targetValue = when {
             isRunning -> NeonCyan
-            isConnecting -> NeonCyan
+            isConnecting -> HotaruMint
             else -> Color(0xFF7B2CBF)
         },
         animationSpec = tween(500),
@@ -876,24 +1035,39 @@ private fun NeonConnectButton(
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
             animation = tween(
-                durationMillis = if (isConnecting) 1200 else 5000,
+                durationMillis = if (isConnecting) 1050 else 5000,
                 easing = LinearEasing,
             ),
             repeatMode = RepeatMode.Restart,
         ),
         label = "spinAngle",
     )
+    val sparkleOrbit by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2800, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "sparkleOrbit",
+    )
 
     val actionLabel = when {
         isRunning -> if (isPersian) "قطع اتصال" else "CONNECTED"
-        isOptimizing -> if (isPersian) "انتخاب خودکار" else "OPTIMIZING"
-        isConnecting -> if (isPersian) "لطفاً صبر کنید" else "CONNECTING"
+        isConnecting -> {
+            val stepNum = connectStage.stepIndex.coerceIn(1, 4)
+            if (isPersian) {
+                "مرحله ${toPersianDigits(stepNum.toString())}/۴ • ${connectStage.badgeTag}"
+            } else {
+                "STEP $stepNum/4 • ${connectStage.badgeTag}"
+            }
+        }
         else -> if (isPersian) "اتصال" else "CONNECT"
     }
 
     Box(
         modifier = Modifier
-            .size(228.dp)
+            .size(212.dp)
             .clip(CircleShape)
             .semantics { contentDescription = actionLabel }
             .clickable(role = Role.Button, onClick = onClick),
@@ -919,10 +1093,18 @@ private fun NeonConnectButton(
 
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFF1A1E33),
-                        VoidGalaxyBg,
-                    ),
+                    colors = if (isConnecting) {
+                        listOf(
+                            Color(0xFF4B286E),
+                            Color(0xFF28204E),
+                            Color(0xFF141830),
+                        )
+                    } else {
+                        listOf(
+                            Color(0xFF1A1E33),
+                            VoidGalaxyBg,
+                        )
+                    },
                     center = center,
                     radius = innerRingRadius,
                 ),
@@ -934,7 +1116,7 @@ private fun NeonConnectButton(
                     brush = Brush.sweepGradient(
                         listOf(
                             Color.Transparent,
-                            secondaryGlow.copy(alpha = 0.85f),
+                            secondaryGlow.copy(alpha = 0.92f),
                             ringColor,
                             Color.Transparent,
                         )
@@ -962,38 +1144,210 @@ private fun NeonConnectButton(
                 style = Stroke(width = 7.dp.toPx()),
             )
 
-            val glyphCenter = Offset(center.x, center.y - 20.dp.toPx())
-            val glyphRadius = 18.dp.toPx()
-            drawArc(
-                color = ringColor,
-                startAngle = -52f,
-                sweepAngle = 284f,
-                useCenter = false,
-                topLeft = Offset(glyphCenter.x - glyphRadius, glyphCenter.y - glyphRadius),
-                size = Size(glyphRadius * 2f, glyphRadius * 2f),
-                style = Stroke(width = 3.2.dp.toPx(), cap = StrokeCap.Round),
-            )
-            drawLine(
-                color = ringColor,
-                start = Offset(glyphCenter.x, glyphCenter.y - glyphRadius - 3.dp.toPx()),
-                end = Offset(glyphCenter.x, glyphCenter.y - 2.dp.toPx()),
-                strokeWidth = 3.2.dp.toPx(),
-                cap = StrokeCap.Round,
-            )
+            if (isConnecting) {
+                val orbitColors = listOf(SakuraPink, NeonCyan, HotaruMint, WarmAmber)
+                val orbitRadius = innerRingRadius * 0.84f
+                orbitColors.forEachIndexed { idx, sparkColor ->
+                    val rad = Math.toRadians((sparkleOrbit + idx * 90f).toDouble())
+                    val sx = center.x + (orbitRadius * cos(rad)).toFloat()
+                    val sy = center.y + (orbitRadius * sin(rad)).toFloat()
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(sparkColor.copy(alpha = 0.95f), Color.Transparent),
+                            center = Offset(sx, sy),
+                            radius = 10.dp.toPx(),
+                        ),
+                        radius = 10.dp.toPx(),
+                        center = Offset(sx, sy),
+                    )
+                    drawCircle(
+                        color = Color.White,
+                        radius = 2.6.dp.toPx(),
+                        center = Offset(sx, sy),
+                    )
+                }
+            } else {
+                val glyphCenter = Offset(center.x, center.y - 20.dp.toPx())
+                val glyphRadius = 18.dp.toPx()
+                drawArc(
+                    color = ringColor,
+                    startAngle = -52f,
+                    sweepAngle = 284f,
+                    useCenter = false,
+                    topLeft = Offset(glyphCenter.x - glyphRadius, glyphCenter.y - glyphRadius),
+                    size = Size(glyphRadius * 2f, glyphRadius * 2f),
+                    style = Stroke(width = 3.2.dp.toPx(), cap = StrokeCap.Round),
+                )
+                drawLine(
+                    color = ringColor,
+                    start = Offset(glyphCenter.x, glyphCenter.y - glyphRadius - 3.dp.toPx()),
+                    end = Offset(glyphCenter.x, glyphCenter.y - 2.dp.toPx()),
+                    strokeWidth = 3.2.dp.toPx(),
+                    cap = StrokeCap.Round,
+                )
+            }
         }
 
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(top = 54.dp),
-        ) {
-            Text(
-                text = actionLabel,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = if (isPersian) 0.sp else 1.8.sp,
-                    color = Color.White,
+        if (isConnecting) {
+            Box(
+                modifier = Modifier
+                    .size(164.dp)
+                    .clip(CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                HotaruDancingMascot(
+                    contentDescription = actionLabel,
+                    connectStage = connectStage,
+                    modifier = Modifier
+                        .padding(bottom = 16.dp)
+                        .size(148.dp),
                 )
-            )
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = Color(0xFF0E1326).copy(alpha = 0.90f),
+                    border = BorderStroke(1.dp, secondaryGlow.copy(alpha = 0.65f)),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 6.dp),
+                ) {
+                    Text(
+                        text = actionLabel,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = Color.White,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 10.sp,
+                            letterSpacing = if (isPersian) 0.sp else 0.8.sp,
+                        ),
+                    )
+                }
+            }
+        } else {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(top = 54.dp),
+            ) {
+                Text(
+                    text = actionLabel,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = if (isPersian) 0.sp else 1.8.sp,
+                        color = Color.White,
+                    )
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HotaruConnectingStageCard(
+    stage: HotaruSmartEngine.ConnectStage,
+    isPersian: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val activeStep = stage.stepIndex.coerceIn(1, 4)
+    val subtitleEn = when (stage) {
+        HotaruSmartEngine.ConnectStage.WARM_RECONNECT -> "Verifying cached fastest route with 32 KiB check ⚡"
+        HotaruSmartEngine.ConnectStage.UPDATING_NODES -> "Hotaru is syncing the freshest cloud servers ✨"
+        HotaruSmartEngine.ConnectStage.TCP_SWEEP -> "Finding the cleanest ports on your ISP ⚡"
+        HotaruSmartEngine.ConnectStage.SPEED_TEST_WAVE_1,
+        HotaruSmartEngine.ConnectStage.SPEED_TEST_WAVE_2,
+        HotaruSmartEngine.ConnectStage.SPEED_TEST_WAVE_3 -> "Measuring real download speed on top nodes 🚀"
+        HotaruSmartEngine.ConnectStage.CLOUD_RECOVERY -> "Trying smart cloud anti-censorship routes 🛡️"
+        HotaruSmartEngine.ConnectStage.LOCKING_TUNNEL,
+        HotaruSmartEngine.ConnectStage.IDLE -> "Ready to fly! Opening secure tunnel 🦋"
+    }
+
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = DeepCyberSurface.copy(alpha = 0.88f),
+        border = BorderStroke(
+            1.dp,
+            Brush.horizontalGradient(
+                listOf(ConnectingViolet.copy(alpha = 0.55f), NeonCyan.copy(alpha = 0.55f))
+            ),
+        ),
+        shadowElevation = 8.dp,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                for (step in 1..4) {
+                    val lit = step <= activeStep
+                    val barColor by animateColorAsState(
+                        targetValue = when {
+                            step < activeStep -> HotaruMint
+                            step == activeStep -> NeonCyan
+                            else -> MutedText.copy(alpha = 0.25f)
+                        },
+                        animationSpec = tween(350),
+                        label = "stageBar$step",
+                    )
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(3.5.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(barColor.copy(alpha = if (lit) 0.95f else 0.35f))
+                    )
+                }
+            }
+
+            AnimatedContent(
+                targetState = stage,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clipToBounds(),
+                transitionSpec = {
+                    (fadeIn(animationSpec = tween(220, delayMillis = 60)) +
+                        scaleIn(initialScale = 0.96f, animationSpec = tween(220)))
+                        .togetherWith(
+                            fadeOut(animationSpec = tween(140))
+                        )
+                },
+                contentAlignment = Alignment.Center,
+                label = "connectStageText",
+            ) { current ->
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        text = if (isPersian) current.titleFa else current.titleEn,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                    )
+                    Text(
+                        text = if (isPersian) current.subtitleFa else subtitleEn,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = NeonCyan.copy(alpha = 0.90f),
+                            fontWeight = FontWeight.Medium,
+                        ),
+                    )
+                }
+            }
         }
     }
 }
@@ -1165,8 +1519,8 @@ private fun HotaruSmartStatusCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(horizontal = 16.dp, vertical = 11.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1250,6 +1604,23 @@ private fun HotaruSmartStatusCard(
         }
     }
 }
+
+private fun toPersianDigits(input: String): String = input.map { c ->
+    when (c) {
+        '0' -> '۰'
+        '1' -> '۱'
+        '2' -> '۲'
+        '3' -> '۳'
+        '4' -> '۴'
+        '5' -> '۵'
+        '6' -> '۶'
+        '7' -> '۷'
+        '8' -> '۸'
+        '9' -> '۹'
+        ',' -> '،'
+        else -> c
+    }
+}.joinToString("")
 
 private fun formatDuration(seconds: Long): String {
     val hours = TimeUnit.SECONDS.toHours(seconds)
@@ -1513,24 +1884,25 @@ private fun FirstRunLanguageDialog(
 private fun HotaruFooterActionsBar(
     isPersian: Boolean,
     onOpenAbout: () -> Unit,
+    onOpenCreatorBot: () -> Unit,
     onOpenGitHub: () -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Surface(
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(14.dp),
             color = DeepCyberSurface.copy(alpha = 0.88f),
             border = BorderStroke(1.dp, NeonCyan.copy(alpha = 0.34f)),
             modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(16.dp))
+                .weight(0.9f)
+                .clip(RoundedCornerShape(14.dp))
                 .clickable(onClick = onOpenAbout),
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
             ) {
@@ -1538,14 +1910,14 @@ private fun HotaruFooterActionsBar(
                     painter = painterResource(R.drawable.ic_about_24dp),
                     contentDescription = if (isPersian) "درباره ما" else "About Us",
                     tint = NeonCyan,
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(15.dp),
                 )
-                Spacer(modifier = Modifier.width(6.dp))
+                Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = if (isPersian) "درباره ما و حمایت" else "About & Support",
+                    text = if (isPersian) "درباره ما" else "About",
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.labelMedium.copy(
+                    style = MaterialTheme.typography.labelSmall.copy(
                         color = Color.White.copy(alpha = 0.94f),
                         fontWeight = FontWeight.SemiBold,
                     ),
@@ -1554,16 +1926,52 @@ private fun HotaruFooterActionsBar(
         }
 
         Surface(
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(14.dp),
+            color = SakuraPink.copy(alpha = 0.14f),
+            border = BorderStroke(
+                1.dp,
+                Brush.horizontalGradient(listOf(SakuraPink.copy(alpha = 0.72f), HotaruMint.copy(alpha = 0.72f))),
+            ),
+            modifier = Modifier
+                .weight(1.22f)
+                .clip(RoundedCornerShape(14.dp))
+                .clickable(onClick = onOpenCreatorBot),
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_telegram_24dp),
+                    contentDescription = if (isPersian) "ارتباط با سازنده" else "Contact Creator",
+                    tint = HotaruMint,
+                    modifier = Modifier.size(15.dp),
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = if (isPersian) "ارتباط با سازنده" else "Contact Creator",
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                    ),
+                )
+            }
+        }
+
+        Surface(
+            shape = RoundedCornerShape(14.dp),
             color = WarmAmber.copy(alpha = 0.12f),
             border = BorderStroke(1.dp, WarmAmber.copy(alpha = 0.42f)),
             modifier = Modifier
-                .weight(0.95f)
-                .clip(RoundedCornerShape(16.dp))
+                .weight(0.88f)
+                .clip(RoundedCornerShape(14.dp))
                 .clickable(onClick = onOpenGitHub),
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
             ) {
@@ -1571,14 +1979,14 @@ private fun HotaruFooterActionsBar(
                     painter = painterResource(R.drawable.ic_github_24dp),
                     contentDescription = "GitHub Star",
                     tint = WarmAmber,
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(15.dp),
                 )
-                Spacer(modifier = Modifier.width(5.dp))
+                Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = if (isPersian) "ستاره گیت‌هاب ⭐" else "Star GitHub ⭐",
+                    text = if (isPersian) "گیت‌هاب ⭐" else "GitHub ⭐",
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.labelMedium.copy(
+                    style = MaterialTheme.typography.labelSmall.copy(
                         color = WarmAmber,
                         fontWeight = FontWeight.Bold,
                     ),
@@ -1634,11 +2042,27 @@ private fun HotaruUpdateDialog(
     currentVersion: String,
     latestVersion: String,
     releaseNotes: String,
+    directApkUrl: String?,
+    isVpnRunning: Boolean,
     onToggleLanguage: () -> Unit,
-    onDownloadClick: () -> Unit,
+    onOpenBrowserClick: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    Dialog(onDismissRequest = onDismiss) {
+    val context = LocalContext.current.applicationContext
+    val scope = rememberCoroutineScope()
+    val hasDirectApk = remember(directApkUrl) {
+        !directApkUrl.isNullOrBlank() &&
+            directApkUrl.lowercase().contains(".apk") &&
+            HotaruApkUpdater.isPermittedDownloadUrl(directApkUrl)
+    }
+    var isDownloading by remember { mutableStateOf(false) }
+    var downloadPercent by remember { mutableStateOf(0) }
+    var downloadedBytes by remember { mutableLongStateOf(0L) }
+    var totalBytes by remember { mutableLongStateOf(0L) }
+    var downloadedFile by remember { mutableStateOf<File?>(null) }
+    var downloadError by remember { mutableStateOf<String?>(null) }
+
+    Dialog(onDismissRequest = { if (!isDownloading) onDismiss() }) {
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = DeepCyberSurface,
@@ -1652,7 +2076,7 @@ private fun HotaruUpdateDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(22.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1727,7 +2151,7 @@ private fun HotaruUpdateDialog(
                         if (isPersian) {
                             "بهبود سرعت انتخاب خودکار، پایداری بیشتر اتصال و ارتقای امنیت هسته در نسخه جدید آماده دانلود است."
                         } else {
-                            "Improved auto-pilot speed, connection stability, and core updates are ready on the GitHub Releases page."
+                            "Improved auto-pilot speed, connection stability, and core updates are ready to install."
                         }
                     }
                 }
@@ -1736,7 +2160,7 @@ private fun HotaruUpdateDialog(
                     text = summaryText,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(92.dp)
+                        .height(86.dp)
                         .verticalScroll(rememberScrollState()),
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = Color.White.copy(alpha = 0.85f),
@@ -1744,27 +2168,155 @@ private fun HotaruUpdateDialog(
                     ),
                 )
 
-                Button(
-                    onClick = onDownloadClick,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .defaultMinSize(minHeight = 46.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = HotaruMint,
-                        contentColor = Color(0xFF07080C),
-                    ),
-                ) {
+                if (isDownloading) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(5.dp),
+                    ) {
+                        if (totalBytes > 0L) {
+                            LinearProgressIndicator(
+                                progress = { (downloadPercent / 100f).coerceIn(0f, 1f) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(50)),
+                                color = HotaruMint,
+                                trackColor = VoidGalaxyBg,
+                            )
+                        } else {
+                            LinearProgressIndicator(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(50)),
+                                color = HotaruMint,
+                                trackColor = VoidGalaxyBg,
+                            )
+                        }
+                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                            val progressLabel = if (totalBytes > 0L) {
+                                "${formatTraffic(downloadedBytes)} / ${formatTraffic(totalBytes)} ($downloadPercent%)"
+                            } else {
+                                formatTraffic(downloadedBytes)
+                            }
+                            Text(
+                                text = progressLabel,
+                                modifier = Modifier.align(Alignment.CenterHorizontally),
+                                style = MaterialTheme.typography.labelSmall.copy(color = NeonCyan),
+                            )
+                        }
+                    }
+                }
+
+                if (!downloadError.isNullOrBlank()) {
                     Text(
-                        text = if (isPersian) "⬇️ رفتن به صفحه دانلود" else "⬇️ Open Download Page",
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
+                        text = downloadError!!,
+                        style = MaterialTheme.typography.labelSmall.copy(color = CyberMagenta),
                     )
                 }
 
+                if (hasDirectApk) {
+                    Button(
+                        enabled = !isDownloading,
+                        onClick = {
+                            val readyApk = downloadedFile
+                            if (readyApk != null && readyApk.exists()) {
+                                if (HotaruApkUpdater.launchApkInstaller(context, readyApk)) {
+                                    onDismiss()
+                                }
+                                return@Button
+                            }
+                            isDownloading = true
+                            downloadError = null
+                            scope.launch {
+                                val res = HotaruApkUpdater.downloadUpdateApk(
+                                    context = context,
+                                    downloadUrl = directApkUrl!!,
+                                    isVpnRunning = isVpnRunning,
+                                    onProgress = { pct, dl, tot ->
+                                        downloadPercent = pct
+                                        downloadedBytes = dl
+                                        totalBytes = tot
+                                    },
+                                )
+                                isDownloading = false
+                                res.onSuccess { file ->
+                                    downloadedFile = file
+                                    if (HotaruApkUpdater.launchApkInstaller(context, file)) {
+                                        onDismiss()
+                                    }
+                                }.onFailure { err ->
+                                    downloadError = if (isPersian) {
+                                        "دانلود مستقیم ناموفق بود (${err.message}). می‌توانید از صفحه گیت‌هاب دانلود کنید."
+                                    } else {
+                                        "Direct download failed (${err.message}). You can use GitHub Releases below."
+                                    }
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .defaultMinSize(minHeight = 46.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = HotaruMint,
+                            contentColor = Color(0xFF07080C),
+                        ),
+                    ) {
+                        val btnLabel = when {
+                            isDownloading -> if (isPersian) "⏳ در حال دانلود نسخه جدید..." else "⏳ Downloading Update..."
+                            downloadedFile != null -> if (isPersian) "📦 نصب نسخه دانلودشده" else "📦 Install Downloaded APK"
+                            else -> if (isPersian) "⬇️ دانلود و نصب مستقیم" else "⬇️ Download & Install Update"
+                        }
+                        Text(
+                            text = btnLabel,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
+                        )
+                    }
+
+                    OutlinedButton(
+                        enabled = !isDownloading,
+                        onClick = onOpenBrowserClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .defaultMinSize(minHeight = 42.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(1.dp, NeonCyan.copy(alpha = 0.55f)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = NeonCyan),
+                    ) {
+                        Text(
+                            text = if (isPersian) "🌐 باز کردن صفحه گیت‌هاب" else "🌐 Open GitHub Releases",
+                            maxLines = 1,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        )
+                    }
+                } else {
+                    Button(
+                        onClick = onOpenBrowserClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .defaultMinSize(minHeight = 46.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = HotaruMint,
+                            contentColor = Color(0xFF07080C),
+                        ),
+                    ) {
+                        Text(
+                            text = if (isPersian) "⬇️ رفتن به صفحه دانلود" else "⬇️ Open Download Page",
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
+                        )
+                    }
+                }
+
                 TextButton(
+                    enabled = !isDownloading,
                     onClick = onDismiss,
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                 ) {
@@ -1785,6 +2337,7 @@ private fun HotaruAboutDialog(
     onToggleLanguage: () -> Unit,
     onOpenGitHub: () -> Unit,
     onOpenTelegram: () -> Unit,
+    onOpenCreatorBot: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     Dialog(onDismissRequest = onDismiss) {
@@ -1878,6 +2431,26 @@ private fun HotaruAboutDialog(
                 }
 
                 OutlinedButton(
+                    onClick = onOpenCreatorBot,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .defaultMinSize(minHeight = 46.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(1.dp, HotaruMint.copy(alpha = 0.72f)),
+                ) {
+                    Text(
+                        text = if (isPersian) "💬 ارتباط با سازنده (@OneForAllHubBot)" else "💬 Contact Creator (@OneForAllHubBot)",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            color = HotaruMint,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                    )
+                }
+
+                OutlinedButton(
                     onClick = onOpenTelegram,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1917,6 +2490,7 @@ private fun HotaruFirstConnectDialog(
     onToggleLanguage: () -> Unit,
     onOpenGitHub: () -> Unit,
     onOpenTelegram: () -> Unit,
+    onOpenCreatorBot: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     Dialog(onDismissRequest = onDismiss) {
@@ -2001,6 +2575,26 @@ private fun HotaruFirstConnectDialog(
                 }
 
                 OutlinedButton(
+                    onClick = onOpenCreatorBot,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .defaultMinSize(minHeight = 46.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(1.dp, HotaruMint.copy(alpha = 0.72f)),
+                ) {
+                    Text(
+                        text = if (isPersian) "💬 ارتباط با سازنده (@OneForAllHubBot)" else "💬 Contact Creator (@OneForAllHubBot)",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            color = HotaruMint,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                    )
+                }
+
+                OutlinedButton(
                     onClick = onOpenTelegram,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -2028,6 +2622,372 @@ private fun HotaruFirstConnectDialog(
                             fontWeight = FontWeight.Bold,
                         ),
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HotaruQuickControlsRow(
+    isPersian: Boolean,
+    bypassedAppsCount: Int,
+    onOpenPerAppBypass: () -> Unit,
+) {
+    val appsActive = bypassedAppsCount > 0
+    val countTxt = if (appsActive) {
+        val raw = bypassedAppsCount.toString()
+        " (${if (isPersian) toPersianDigits(raw) else raw})"
+    } else ""
+
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = if (appsActive) ConnectingViolet.copy(alpha = 0.16f) else DeepCyberSurface.copy(alpha = 0.88f),
+        border = BorderStroke(
+            1.dp,
+            if (appsActive) ConnectingViolet.copy(alpha = 0.58f) else Color.White.copy(alpha = 0.14f),
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onOpenPerAppBypass),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            Text(text = "📱", style = MaterialTheme.typography.labelMedium)
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = (if (isPersian) "برنامه‌های مستقیم (بدون فیلترشکن)" else "Direct Apps (Bypass VPN)") + countTxt,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.labelMedium.copy(
+                    color = if (appsActive) Color.White else Color.White.copy(alpha = 0.92f),
+                    fontWeight = FontWeight.Bold,
+                ),
+            )
+        }
+    }
+}
+
+private data class SimpleBypassAppItem(
+    val appName: String,
+    val packageName: String,
+    val isDomesticCandidate: Boolean,
+)
+
+private fun isLikelyIranianDomesticPackage(pkg: String): Boolean {
+    val p = pkg.lowercase()
+    return p.startsWith("ir.") ||
+        p.startsWith("cab.snapp") ||
+        p.startsWith("com.digikala") ||
+        p.startsWith("com.sibche") ||
+        p.startsWith("com.farsitel") ||
+        p.startsWith("my.irancell") ||
+        p.startsWith("com.tosan") ||
+        p.startsWith("com.sadad") ||
+        p.startsWith("com.asanpardakht") ||
+        p.startsWith("com.shaparak") ||
+        p.startsWith("com.sibapp") ||
+        p.startsWith("com.aparat") ||
+        p.startsWith("com.filimo") ||
+        p.startsWith("com.balad") ||
+        p.startsWith("org.rubika") ||
+        p.startsWith("app.rbmain")
+}
+
+@Composable
+private fun HotaruPerAppBypassDialog(
+    isPersian: Boolean,
+    isVpnRunning: Boolean,
+    onSaved: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current.applicationContext
+    var masterEnabled by remember {
+        mutableStateOf(MmkvManager.decodeSettingsBool(AppConfig.PREF_PER_APP_PROXY, false))
+    }
+    var selectedPkgs by remember {
+        mutableStateOf(
+            MmkvManager.decodeSettingsStringSet(AppConfig.PREF_PER_APP_PROXY_SET)?.toSet().orEmpty()
+        )
+    }
+    var searchQuery by remember { mutableStateOf("") }
+    var allApps by remember { mutableStateOf<List<SimpleBypassAppItem>>(emptyList()) }
+    var isLoadingApps by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        allApps = withContext(Dispatchers.IO) {
+            val pm = context.packageManager
+            val selfPkg = context.packageName
+            @Suppress("DEPRECATION")
+            val installed = runCatching { pm.getInstalledApplications(PackageManager.GET_META_DATA) }
+                .getOrDefault(emptyList())
+            installed
+                .asSequence()
+                .filter { info ->
+                    info.packageName != selfPkg &&
+                        ((info.flags and ApplicationInfo.FLAG_SYSTEM) == 0 ||
+                            pm.getLaunchIntentForPackage(info.packageName) != null)
+                }
+                .map { info ->
+                    val label = runCatching { pm.getApplicationLabel(info).toString().trim() }
+                        .getOrDefault(info.packageName)
+                        .ifEmpty { info.packageName }
+                    SimpleBypassAppItem(
+                        appName = label,
+                        packageName = info.packageName,
+                        isDomesticCandidate = isLikelyIranianDomesticPackage(info.packageName),
+                    )
+                }
+                .sortedWith(
+                    compareByDescending<SimpleBypassAppItem> { it.packageName in selectedPkgs }
+                        .thenByDescending { it.isDomesticCandidate }
+                        .thenBy { it.appName.lowercase() }
+                )
+                .toList()
+        }
+        isLoadingApps = false
+    }
+
+    val filteredApps = remember(allApps, searchQuery) {
+        val q = searchQuery.trim().lowercase()
+        if (q.isEmpty()) allApps
+        else allApps.filter {
+            it.appName.lowercase().contains(q) || it.packageName.lowercase().contains(q)
+        }
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = DeepCyberSurface,
+            border = BorderStroke(1.5.dp, Brush.linearGradient(listOf(ConnectingViolet, NeonCyan))),
+            shadowElevation = 18.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(9.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (isPersian) "استثنای برنامه‌ها (بدون فیلترشکن)" else "Per-App VPN Bypass",
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                color = Color.White,
+                                fontWeight = FontWeight.ExtraBold,
+                            ),
+                        )
+                        Text(
+                            text = if (isPersian) {
+                                "اپ‌های انتخابی مستقیم و بدون عبور از تانل وصل می‌شوند"
+                            } else {
+                                "Selected apps connect directly outside the VPN tunnel"
+                            },
+                            style = MaterialTheme.typography.labelSmall.copy(color = MutedText),
+                        )
+                    }
+                    Switch(
+                        checked = masterEnabled,
+                        onCheckedChange = { masterEnabled = it },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = VoidGalaxyBg,
+                            checkedTrackColor = HotaruMint,
+                        ),
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            val domestic = allApps.filter { it.isDomesticCandidate }.map { it.packageName }.toSet()
+                            selectedPkgs = selectedPkgs + domestic
+                            if (selectedPkgs.isNotEmpty()) masterEnabled = true
+                        },
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, HotaruMint.copy(alpha = 0.55f)),
+                    ) {
+                        Text(
+                            text = if (isPersian) "⚡ انتخاب خودکار اپ‌های ایرانی" else "⚡ Auto-Select Iranian Apps",
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = HotaruMint,
+                                fontWeight = FontWeight.Bold,
+                            ),
+                        )
+                    }
+
+                    if (selectedPkgs.isNotEmpty()) {
+                        OutlinedButton(
+                            onClick = { selectedPkgs = emptySet() },
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, MutedText.copy(alpha = 0.4f)),
+                        ) {
+                            Text(
+                                text = if (isPersian) "پاکسازی" else "Clear",
+                                style = MaterialTheme.typography.labelSmall.copy(color = MutedText),
+                            )
+                        }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    singleLine = true,
+                    placeholder = {
+                        Text(
+                            text = if (isPersian) "جستجوی نام برنامه..." else "Search apps...",
+                            style = MaterialTheme.typography.bodySmall.copy(color = MutedText),
+                        )
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = NeonCyan,
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.16f),
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                if (isLoadingApps) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(210.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = if (isPersian) "در حال بارگذاری برنامه‌ها..." else "Loading installed apps...",
+                            style = MaterialTheme.typography.bodySmall.copy(color = MutedText),
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(210.dp),
+                        verticalArrangement = Arrangement.spacedBy(5.dp),
+                    ) {
+                        items(filteredApps, key = { it.packageName }) { item ->
+                            val checked = item.packageName in selectedPkgs
+                            Surface(
+                                shape = RoundedCornerShape(11.dp),
+                                color = if (checked) ConnectingViolet.copy(alpha = 0.15f) else VoidGalaxyBg,
+                                border = BorderStroke(
+                                    1.dp,
+                                    if (checked) ConnectingViolet.copy(alpha = 0.55f) else Color.White.copy(alpha = 0.08f),
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(11.dp))
+                                    .clickable {
+                                        selectedPkgs = if (checked) {
+                                            selectedPkgs - item.packageName
+                                        } else {
+                                            masterEnabled = true
+                                            selectedPkgs + item.packageName
+                                        }
+                                    },
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = item.appName,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            style = MaterialTheme.typography.bodySmall.copy(
+                                                color = Color.White,
+                                                fontWeight = FontWeight.Bold,
+                                            ),
+                                        )
+                                        Text(
+                                            text = item.packageName,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                color = MutedText,
+                                                fontSize = 10.sp,
+                                            ),
+                                        )
+                                    }
+                                    Checkbox(
+                                        checked = checked,
+                                        onCheckedChange = null,
+                                        colors = CheckboxDefaults.colors(
+                                            checkedColor = HotaruMint,
+                                            checkmarkColor = VoidGalaxyBg,
+                                        ),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    TextButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(0.42f),
+                    ) {
+                        Text(
+                            text = if (isPersian) "انصراف" else "Cancel",
+                            style = MaterialTheme.typography.labelLarge.copy(color = MutedText),
+                        )
+                    }
+                    Button(
+                        onClick = {
+                            val active = masterEnabled && selectedPkgs.isNotEmpty()
+                            MmkvManager.encodeSettings(AppConfig.PREF_BYPASS_APPS, true)
+                            MmkvManager.encodeSettings(AppConfig.PREF_PER_APP_PROXY, active)
+                            MmkvManager.encodeSettings(AppConfig.PREF_PER_APP_PROXY_SET, selectedPkgs.toMutableSet())
+                            if (isVpnRunning) {
+                                LauncherManager.restartService(context)
+                            }
+                            onSaved(if (active) selectedPkgs.size else 0)
+                        },
+                        modifier = Modifier.weight(0.58f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = HotaruMint,
+                            contentColor = VoidGalaxyBg,
+                        ),
+                    ) {
+                        Text(
+                            text = if (isPersian) "ذخیره تغییرات" else "Save Bypass",
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
+                        )
+                    }
                 }
             }
         }

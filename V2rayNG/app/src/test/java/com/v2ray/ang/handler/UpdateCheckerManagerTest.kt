@@ -66,4 +66,30 @@ class UpdateCheckerManagerTest {
         assertTrue(res.checkedOk)
         assertFalse(res.hasUpdate)
     }
+
+    @Test
+    fun `2_3_44 triggers update prompt for 2_3_43 users and not for 2_3_44 users`() {
+        assertTrue(UpdateCheckerManager.compareVersions("2.3.44", "2.3.43") > 0)
+        val releaseJson = """
+            {
+              "tag_name": "v2.3.44",
+              "html_url": "https://github.com/OneForAllHub/HotaruNet/releases/tag/v2.3.44",
+              "body": "Dancing Hotaru mascot + native Telegram bot routing",
+              "assets": [
+                {
+                  "name": "HotaruNet_2.3.44_universal.apk",
+                  "browser_download_url": "https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_universal.apk"
+                }
+              ]
+            }
+        """.trimIndent()
+        val forOldUsers = UpdateCheckerManager.parseUpdateResponse(releaseJson, currentVersion = "2.3.43")
+        assertTrue(forOldUsers.checkedOk)
+        assertTrue(forOldUsers.hasUpdate)
+        assertEquals("2.3.44", forOldUsers.latestVersion)
+
+        val forCurrentUsers = UpdateCheckerManager.parseUpdateResponse(releaseJson, currentVersion = "2.3.44")
+        assertTrue(forCurrentUsers.checkedOk)
+        assertFalse(forCurrentUsers.hasUpdate)
+    }
 }

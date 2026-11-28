@@ -1,9 +1,12 @@
 ﻿package com.v2ray.ang.util
 
+import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.LocaleList
 import android.provider.Settings
@@ -252,18 +255,263 @@ object Utils {
         }
     }
 
+    data class UriLaunchTarget(
+        val uri: String,
+        val targetPackage: String? = null,
+    )
+
+    internal val KNOWN_TELEGRAM_PACKAGES = listOf(
+        "org.telegram.messenger",
+        "org.telegram.messenger.web",
+        "org.telegram.messenger.beta",
+        "org.thunderdog.challegram",
+        "org.telegram.plus",
+        "ir.ilmili.telegraph",
+        "org.aka.messenger",
+        "tw.nekomimi.nekogram",
+        "xyz.nextalone.nagram",
+        "com.radolyn.ayugram",
+        "com.exteragram.messenger",
+        "org.forkclient.messenger",
+        "app.nicegram",
+        "org.telegram.BifToGram",
+        "org.vidogram.messenger",
+    )
+
+    private val TELEGRAM_WEB_HOSTS = setOf(
+        "t.me",
+        "www.t.me",
+        "telegram.me",
+        "www.telegram.me",
+        "telegram.dog",
+        "www.telegram.dog",
+    )
+
+    private val TELEGRAM_RESERVED_PATHS = setOf(
+        "addemoji",
+        "addlist",
+        "addstickers",
+        "addtheme",
+        "bg",
+        "boost",
+        "c",
+        "giftcode",
+        "iv",
+        "joinchat",
+        "login",
+        "m",
+        "nft",
+        "proxy",
+        "s",
+        "setlanguage",
+        "share",
+        "socks",
+    )
+
+    internal fun toTelegramDeepLink(uriString: String): String? {
+        val trimmed = uriString.trim()
+        if (trimmed.isEmpty()) return null
+        val parsed = runCatching { URI(trimmed) }.getOrNull() ?: return null
+        val scheme = parsed.scheme?.lowercase(Locale.ROOT) ?: return null
+        if (scheme == "tg") return trimmed
+        if (scheme != "http" && scheme != "https") return null
+        val host = parsed.host?.lowercase(Locale.ROOT) ?: return null
+        if (host !in TELEGRAM_WEB_HOSTS) return null
+
+        val rawSegments = parsed.rawPath
+            ?.split('/')
+            ?.filter { it.isNotEmpty() }
+            .orEmpty()
+        if (rawSegments.isEmpty()) return null
+
+        val first = rawSegments.first()
+        if (first.startsWith("+") && first.length > 1) {
+            return "tg://join?invite=${encodeURIComponent(first.substring(1))}"
+        }
+        if (first.equals("joinchat", ignoreCase = true)) {
+            val invite = rawSegments.getOrNull(1)?.takeIf { it.isNotBlank() } ?: return null
+            return "tg://join?invite=${encodeURIComponent(invite)}"
+        }
+        if (first.equals("c", ignoreCase = true)) {
+            val channel = rawSegments.getOrNull(1)?.takeIf { it.all(Char::isDigit) } ?: return null
+            val post = rawSegments.getOrNull(2)?.takeIf { it.all(Char::isDigit) } ?: return null
+            return "tg://privatepost?channel=$channel&post=$post"
+        }
+
+        val effectiveSegments = if (first.equals("s", ignoreCase = true) && rawSegments.size >= 2) {
+            rawSegments.drop(1)
+        } else {
+            rawSegments
+        }
+        val username = effectiveSegments.firstOrNull()?.takeIf { it.isNotBlank() } ?: return null
+        if (username.lowercase(Locale.ROOT) in TELEGRAM_RESERVED_PATHS) return null
+        if (!username.matches(Regex("^[A-Za-z0-9_]{3,64}$"))) return null
+
+        val params = mutableListOf("domain=${encodeURIComponent(username)}")
+        val postId = effectiveSegments.getOrNull(1)?.takeIf { it.all(Char::isDigit) }
+        if (postId != null) {
+            params += "post=$postId"
+        }
+        val extraQuery = parsed.rawQuery
+            ?.split('&')
+            ?.filter { part ->
+                part.isNotBlank() &&
+                    !part.startsWith("domain=", ignoreCase = true) &&
+                    !(postId != null && part.startsWith("post=", ignoreCase = true))
+            }
+            .orEmpty()
+        params += extraQuery
+        return "tg://resolve?${params.joinToString("&")}"
+    }
+
+    internal fun toTelegramWebFallbackUrl(uriString: String): String? {
+        val trimmed = uriString.trim()
+        if (trimmed.isEmpty()) return null
+        val parsed = runCatching { URI(trimmed) }.getOrNull() ?: return null
+        val scheme = parsed.scheme?.lowercase(Locale.ROOT) ?: return null
+        if (scheme == "http" || scheme == "https") return trimmed
+        if (scheme != "tg") return null
+
+        val action = parsed.host?.lowercase(Locale.ROOT) ?: return null
+        val queryMap = parsed.rawQuery
+            ?.split('&')
+            ?.mapNotNull { part ->
+                val eq = part.indexOf('=')
+                if (eq <= 0) null else part.substring(0, eq).lowercase(Locale.ROOT) to decodeURIComponent(part.substring(eq + 1))
+            }
+            ?.toMap()
+            .orEmpty()
+
+        return when (action) {
+            "resolve" -> {
+                val domain = queryMap["domain"]?.takeIf { it.isNotBlank() } ?: return null
+                val post = queryMap["post"]?.takeIf { it.all(Char::isDigit) }
+                val base = if (post != null) "https://t.me/$domain/$post" else "https://t.me/$domain"
+                val extra = parsed.rawQuery
+                    ?.split('&')
+                    ?.filter {
+                        it.isNotBlank() &&
+                            !it.startsWith("domain=", ignoreCase = true) &&
+                            !it.startsWith("post=", ignoreCase = true)
+                    }
+                    .orEmpty()
+                if (extra.isEmpty()) base else "$base?${extra.joinToString("&")}"
+            }
+            "join" -> {
+                val invite = queryMap["invite"]?.takeIf { it.isNotBlank() } ?: return null
+                "https://t.me/+$invite"
+            }
+            "privatepost" -> {
+                val channel = queryMap["channel"]?.takeIf { it.all(Char::isDigit) && it.isNotEmpty() } ?: return null
+                val post = queryMap["post"]?.takeIf { it.all(Char::isDigit) && it.isNotEmpty() } ?: return null
+                "https://t.me/c/$channel/$post"
+            }
+            else -> null
+        }
+    }
+
+    internal fun resolveUriLaunchPlan(
+        uriString: String,
+        querySchemeHandlers: (String) -> List<String>,
+        isPackageInstalled: (String) -> Boolean,
+    ): List<UriLaunchTarget> {
+        val trimmed = uriString.trim()
+        if (trimmed.isEmpty()) return emptyList()
+
+        val tgUri = toTelegramDeepLink(trimmed)
+        if (tgUri == null) {
+            return listOf(UriLaunchTarget(trimmed, targetPackage = null))
+        }
+
+        val targets = mutableListOf<UriLaunchTarget>()
+        val schemeHandlers = querySchemeHandlers(tgUri)
+        if (schemeHandlers.isNotEmpty()) {
+            val singlePkg = schemeHandlers.singleOrNull()
+            targets += UriLaunchTarget(tgUri, targetPackage = singlePkg)
+        } else {
+            KNOWN_TELEGRAM_PACKAGES
+                .filter { isPackageInstalled(it) }
+                .forEach { pkg ->
+                    targets += UriLaunchTarget(tgUri, targetPackage = pkg)
+                }
+        }
+
+        val webFallback = toTelegramWebFallbackUrl(trimmed)
+        if (!webFallback.isNullOrBlank() && webFallback != tgUri) {
+            targets += UriLaunchTarget(webFallback, targetPackage = null)
+        }
+        return targets
+    }
+
+    private tailrec fun findActivity(context: Context): Activity? = when (context) {
+        is Activity -> context
+        is ContextWrapper -> findActivity(context.baseContext)
+        else -> null
+    }
+
+    private fun queryViewHandlers(context: Context, uriString: String): List<String> {
+        return try {
+            val intent = Intent(Intent.ACTION_VIEW, uriString.toUri())
+            val pm = context.packageManager
+            val resolved = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                pm.queryIntentActivities(
+                    intent,
+                    PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_DEFAULT_ONLY.toLong()),
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                pm.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY)
+            }
+            resolved.mapNotNull { it.activityInfo?.packageName?.takeIf(String::isNotBlank) }.distinct()
+        } catch (e: Exception) {
+            LogUtil.e(AppConfig.TAG, "Failed to query intent handlers for $uriString", e)
+            emptyList()
+        }
+    }
+
+    private fun isPackageInstalled(context: Context, packageName: String): Boolean {
+        return try {
+            val pm = context.packageManager
+            val pkgInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                pm.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0L))
+            } else {
+                @Suppress("DEPRECATION")
+                pm.getPackageInfo(packageName, 0)
+            }
+            pkgInfo.applicationInfo?.enabled != false
+        } catch (_: Exception) {
+            false
+        }
+    }
+
     /**
-     * Open a URI in a browser.
+     * Open a URI in a native app (e.g. Telegram for t.me links when installed) or browser fallback.
      *
      * @param context The context to use.
      * @param uriString The URI string to open.
      */
     fun openUri(context: Context, uriString: String) {
-        try {
-            val uri = uriString.toUri()
-            context.startActivity(Intent(Intent.ACTION_VIEW, uri))
-        } catch (e: Exception) {
-            LogUtil.e(AppConfig.TAG, "Failed to open URI", e)
+        val plan = resolveUriLaunchPlan(
+            uriString = uriString,
+            querySchemeHandlers = { schemeUri -> queryViewHandlers(context, schemeUri) },
+            isPackageInstalled = { pkg -> isPackageInstalled(context, pkg) },
+        )
+        val needNewTask = findActivity(context) == null
+        for (target in plan) {
+            try {
+                val intent = Intent(Intent.ACTION_VIEW, target.uri.toUri()).apply {
+                    if (target.targetPackage != null) {
+                        setPackage(target.targetPackage)
+                    }
+                    if (needNewTask) {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                }
+                context.startActivity(intent)
+                return
+            } catch (e: Exception) {
+                LogUtil.w(AppConfig.TAG, "Failed to launch URI target ${target.uri} (${target.targetPackage})", e)
+            }
         }
     }
 

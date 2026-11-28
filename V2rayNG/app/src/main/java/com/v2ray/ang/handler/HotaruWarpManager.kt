@@ -39,11 +39,11 @@ object HotaruWarpManager {
     const val WARP_PEER_PUBLIC_KEY = "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo="
 
     // Pre-provisioned fallback credentials in case api.cloudflareclient.com is DNS poisoned or blocked
-    private const val FALLBACK_PRIV_KEY = "" // Live registration generates ephemeral X25519 keys per device
-    private const val FALLBACK_PUB_KEY = ""
-    private const val FALLBACK_CLIENT_ID = "AAAA"
+    private const val FALLBACK_PRIV_KEY = "QLRIGCkOEK9cjH8rnKgzy3Mrz0DA0X5CM+4TU9FizHg="
+    private const val FALLBACK_PUB_KEY = "5fdt0ewe9+qnrIaw8P1NAjBUFGkVc+xIYkcNKUwsLSA="
+    private const val FALLBACK_CLIENT_ID = "aMjr"
     private const val FALLBACK_IPV4 = "172.16.0.2"
-    private const val FALLBACK_IPV6 = "fd00::2"
+    private const val FALLBACK_IPV6 = "2606:4700:110:8537:935:592f:f6d7:1087"
 
     // Clean Anycast Cloudflare IPs for Iran (MCI, Irancell, Wi-Fi) across ports 500, 854, 894, 908, 1074, 1194, 2408, 4500
     val CLEAN_WARP_ENDPOINTS = listOf(

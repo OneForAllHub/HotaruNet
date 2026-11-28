@@ -808,6 +808,47 @@ object CoreServiceManager {
                     if (isOrderedBroadcast) resultCode = Activity.RESULT_OK
                     measureV2rayDelay(intent.getStringExtra("content").orEmpty())
                 }
+
+                AppConfig.MSG_STATE_SWITCH_ROUTE -> {
+                    if (isOrderedBroadcast) resultCode = Activity.RESULT_OK
+                    val svc = serviceControl.getService()
+                    watchdogScope.launch {
+                        var switched: HotaruSmartEngine.SelectionResult? = null
+                        val reloaded = synchronized(lifecycleLock) {
+                            val active = runningGuid
+                            if (active != null && !isReloading && !isStopping && isRunning()) {
+                                val next = HotaruSmartEngine.switchToNextVerifiedServer(svc, active)
+                                if (next != null) {
+                                    switched = next
+                                    reloadCore()
+                                } else false
+                            } else false
+                        }
+                        if (reloaded && switched != null) {
+                            val ms = switched!!.delayMs
+                            currentLivePingMs = ms
+                            MessageHelper.sendMsg2UI(
+                                svc,
+                                AppConfig.MSG_MEASURE_DELAY_RESULT,
+                                ConnectionTestResult(delayMillis = ms),
+                            )
+                            wakeWatchdogNow(triggerImmediateCheck = false)
+                        }
+                    }
+                }
+
+                AppConfig.MSG_STATE_RELOAD_CONFIG -> {
+                    if (isOrderedBroadcast) resultCode = Activity.RESULT_OK
+                    val svc = serviceControl.getService()
+                    watchdogScope.launch {
+                        SettingsManager.initApp(svc)
+                        synchronized(lifecycleLock) {
+                            if (!isReloading && !isStopping && isRunning()) {
+                                reloadCore()
+                            }
+                        }
+                    }
+                }
             }
 
             when (intent?.action) {

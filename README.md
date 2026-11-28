@@ -26,7 +26,7 @@
 
 ---
 
-## 📥 Download Latest Releases (`v2.3.44`)
+## 📥 Download Latest Releases (`v2.3.45`)
 
 HotaruNet is available natively for both **Windows (PC/Laptop)** and **Android**. No subscription URLs, manual config imports, or account registration needed.
 
@@ -43,10 +43,10 @@ HotaruNet is available natively for both **Windows (PC/Laptop)** and **Android**
   </thead>
   <tbody>
     <tr>
-      <td align="center"><img src="assets/screenshots/windows-home-en.png" alt="HotaruNet v2.3.44 Windows VPN home screen with System Proxy, No Proxy, and Wintun TUN mode" width="210" /></td>
-      <td align="center"><img src="assets/screenshots/windows-connected-noproxy-en.png" alt="HotaruNet v2.3.44 Windows No Proxy mode showing local SOCKS5 and HTTP proxy ports with copy buttons" width="210" /></td>
-      <td align="center"><img src="assets/screenshots/windows-connected-noproxy-fa.png" alt="اسکرین‌شات ویندوز هوتارو نت v2.3.44 در حالت بدون پروکسی فارسی با نمایش پورت محلی" width="210" /></td>
-      <td align="center"><img src="assets/screenshots/windows-stage-robot-en.png" alt="HotaruNet v2.3.44 Windows 4-stage animated Cyber Robot connection progress" width="210" /></td>
+      <td align="center"><img src="assets/screenshots/windows-home-en.png" alt="HotaruNet v2.3.45 Windows VPN home screen with System Proxy, No Proxy, and Wintun TUN mode" width="210" /></td>
+      <td align="center"><img src="assets/screenshots/windows-connected-noproxy-en.png" alt="HotaruNet v2.3.45 Windows No Proxy mode showing local SOCKS5 and HTTP proxy ports with copy buttons" width="210" /></td>
+      <td align="center"><img src="assets/screenshots/windows-connected-noproxy-fa.png" alt="اسکرین‌شات ویندوز هوتارو نت v2.3.45 در حالت بدون پروکسی فارسی با نمایش پورت محلی" width="210" /></td>
+      <td align="center"><img src="assets/screenshots/windows-stage-robot-en.png" alt="HotaruNet v2.3.45 Windows 4-stage animated Cyber Robot connection progress" width="210" /></td>
     </tr>
   </tbody>
 </table>
@@ -55,14 +55,14 @@ High-performance portable client featuring **3 flexible routing modes**: **Syste
 
 | Release Package | Architecture & OS | Size | Description & SHA-256 Checksum |
 | --- | --- | --- | --- |
-| [**`HotaruNet_v2.3.44_windows_x64.zip`**](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_v2.3.44_windows_x64.zip) | **Windows 10 / 11 (64-bit)** | **45.9 MB** | **Standalone Portable Archive** (Zero-Install). Includes `HotaruNet.exe`, privileged TUN service, obfuscated Xray-core DLL, and official Wintun driver.<br/>`SHA-256: 3A49F3C4DAC2B93F5E54672807430F525A7854F7C091F6869C0404C0A736EF11` |
+| [**`HotaruNet_v2.3.45_windows_x64.zip`**](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.45/HotaruNet_v2.3.45_windows_x64.zip) | **Windows 10 / 11 (64-bit)** | **45.8 MB** | **Standalone Portable Archive** (Zero-Install). Includes `HotaruNet.exe`, privileged TUN service, obfuscated Xray-core DLL, and official Wintun driver.<br/>`SHA-256: 25567243E173AD581F3ED9397973C1FCF5E503233EB517AD5F6AE963F1194CB5` |
 
 #### 🚀 Quick Start for Windows:
-1. Download [**`HotaruNet_v2.3.44_windows_x64.zip`**](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_v2.3.44_windows_x64.zip) and **extract the entire ZIP archive** to a folder first *(do not double-click `HotaruNet.exe` directly inside WinRAR / 7-Zip / ZIP preview, so `libhotarucore.dll`, `WebView2Loader.dll`, `wintun.dll`, and `assets/` load side-by-side)*.
+1. Download [**`HotaruNet_v2.3.45_windows_x64.zip`**](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.45/HotaruNet_v2.3.45_windows_x64.zip) and **extract the entire ZIP archive** to a folder first *(do not double-click `HotaruNet.exe` directly inside WinRAR / 7-Zip / ZIP preview, so `libhotarucore.dll`, `WebView2Loader.dll`, `wintun.dll`, and `assets/` load side-by-side)*.
 2. Run **`HotaruNet.exe`**.
 3. Choose your mode:
    - **System Proxy Mode** (Default): Works immediately without Administrator rights. Automatically configures and restores Windows system proxy.
-   - **No Proxy Mode** *(New in v2.3.44)*: Starts the fast autonomous local tunnel (`127.0.0.1` `SOCKS5` + `HTTP` on conflict-free dynamic ports) without touching Windows Registry proxy settings, displaying live copy buttons for manual app/IDE/terminal setup.
+   - **No Proxy Mode** *(New in v2.3.45)*: Starts the fast autonomous local tunnel (`127.0.0.1` `SOCKS5` + `HTTP` on conflict-free dynamic ports) without touching Windows Registry proxy settings, displaying live copy buttons for manual app/IDE/terminal setup.
    - **TUN Mode**: Full virtual network adapter routing. Right-click `HotaruNet.exe` and select *Run as administrator* to enable system-wide Wintun routing.
 4. Click **CONNECT** to watch the 4-stage animated Cyber Robot sync fresh cloud mirrors, sweep speeds, and lock onto the fastest route!
 
@@ -72,15 +72,15 @@ High-performance portable client featuring **3 flexible routing modes**: **Syste
 
 ### 📱 Download for Android (Smartphones & Tablets)
 
-Official signed APK packages directly from [**GitHub Releases (`v2.3.44`)**](https://github.com/OneForAllHub/HotaruNet/releases/latest):
+Official signed APK packages directly from [**GitHub Releases (`v2.3.45`)**](https://github.com/OneForAllHub/HotaruNet/releases/latest):
 
 | File Name | Target Devices / CPU Architecture | Recommended For |
 | --- | --- | --- |
-| [`HotaruNet_2.3.44_arm64-v8a.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_arm64-v8a.apk) | **ARM64 (64-bit)** (28.7 MB) | Almost all modern Android smartphones (Recommended) |
-| [`HotaruNet_2.3.44_armeabi-v7a.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_armeabi-v7a.apk) | **ARMv7 (32-bit)** (29.2 MB) | Older Android phones & tablets |
-| [`HotaruNet_2.3.44_x86_64.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_x86_64.apk) | **x86_64** (29.7 MB) | Chromebooks & PC Android emulators |
-| [`HotaruNet_2.3.44_x86.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_x86.apk) | **x86** (30.2 MB) | Legacy 32-bit x86 emulators |
-| [`HotaruNet_2.3.44_universal.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_universal.apk) | **Universal (All ABIs)** (66.6 MB) | Unsure which CPU your phone uses |
+| [`HotaruNet_2.3.45_arm64-v8a.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.45/HotaruNet_2.3.45_arm64-v8a.apk) | **ARM64 (64-bit)** (28.7 MB) | Almost all modern Android smartphones (Recommended) |
+| [`HotaruNet_2.3.45_armeabi-v7a.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.45/HotaruNet_2.3.45_armeabi-v7a.apk) | **ARMv7 (32-bit)** (29.3 MB) | Older Android phones & tablets |
+| [`HotaruNet_2.3.45_x86_64.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.45/HotaruNet_2.3.45_x86_64.apk) | **x86_64** (29.8 MB) | Chromebooks & PC Android emulators |
+| [`HotaruNet_2.3.45_x86.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.45/HotaruNet_2.3.45_x86.apk) | **x86** (30.2 MB) | Legacy 32-bit x86 emulators |
+| [`HotaruNet_2.3.45_universal.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.45/HotaruNet_2.3.45_universal.apk) | **Universal (All ABIs)** (66.6 MB) | Unsure which CPU your phone uses |
 
 > 💡 All release packages carry SHA-256 verification checksums on the [Releases page](https://github.com/OneForAllHub/HotaruNet/releases/latest) and work out-of-the-box on Android 7.0 through Android 15 (API 24–35).
 
@@ -136,8 +136,8 @@ HotaruNet ships with an instant in-app **`FA / EN`** switcher supporting full **
   </thead>
   <tbody>
     <tr>
-      <td align="center"><img src="assets/screenshots/android-stage-en.png" alt="HotaruNet v2.3.44 Android 4-Stage Animated Robot Connection Screen (English)" width="210" /></td>
-      <td align="center"><img src="assets/screenshots/android-stage-fa.png" alt="HotaruNet v2.3.44 Android 4-Stage Animated Robot Connection Screen (Persian)" width="210" /></td>
+      <td align="center"><img src="assets/screenshots/android-stage-en.png" alt="HotaruNet v2.3.45 Android 4-Stage Animated Robot Connection Screen (English)" width="210" /></td>
+      <td align="center"><img src="assets/screenshots/android-stage-fa.png" alt="HotaruNet v2.3.45 Android 4-Stage Animated Robot Connection Screen (Persian)" width="210" /></td>
       <td align="center"><img src="assets/screenshots/about-en.png" alt="HotaruNet About & Contact Creator Dialog in English" width="210" /></td>
       <td align="center"><img src="assets/screenshots/about-fa.png" alt="HotaruNet About & Contact Creator Dialog in Persian" width="210" /></td>
     </tr>
@@ -160,7 +160,7 @@ HotaruNet combines a **Zero-Config Cyber-Anime UI** with an **Autonomous Multi-S
   3. **`Hysteria 2`** (QUIC / UDP congestion-controlled transport)
   4. **`XHTTP / SplitHTTP`** (HTTP/2 & HTTP/3 CDN-resilient transport)
   5. **`WebSocket + TLS`** (reverse-proxy fallback)
-- **Three Windows Routing Modes (`v2.3.44`):**
+- **Three Windows Routing Modes (`v2.3.45`):**
   - **System Proxy Mode:** Fast HTTP/SOCKS system proxy toggle with safe automatic registry cleanup on exit.
   - **No Proxy Mode (`SOCKS5` + `HTTP` Local Ports):** Runs the tunnel strictly on conflict-free local ports (`127.0.0.1:10808/10809` or next free port) without modifying Windows system proxy settings, with 1-click copy badges for browsers, IDEs, or CLI tools.
   - **Wintun TUN Adapter Mode:** Full kernel-level network tunneling utilizing the official signed Wintun driver.
@@ -199,7 +199,7 @@ HotaruNet combines a **Zero-Config Cyber-Anime UI** with an **Autonomous Multi-S
 
 <details>
 <summary><b>Which APK file should I download for my Android phone?</b></summary>
-<p>Most phones from the last 7+ years use <code>HotaruNet_2.3.44_arm64-v8a.apk</code> (28.7 MB). If you are unsure or installing across multiple devices, choose <code>HotaruNet_2.3.44_universal.apk</code> (66.6 MB).</p>
+<p>Most phones from the last 7+ years use <code>HotaruNet_2.3.45_arm64-v8a.apk</code> (28.7 MB). If you are unsure or installing across multiple devices, choose <code>HotaruNet_2.3.45_universal.apk</code> (66.6 MB).</p>
 </details>
 
 <details>

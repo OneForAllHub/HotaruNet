@@ -67,6 +67,8 @@ class CoreVpnService : VpnService(), ServiceControl {
         // going through stopAllService() (e.g. when killed unexpectedly). isRunning is
         // set to false at the start of stopAllService(), so this guard prevents a double-close.
         if (isRunning) {
+            isRunning = false
+            runCatching { CoreServiceManager.stopCoreLoop() }
             try {
                 if (::mInterface.isInitialized) {
                     mInterface.close()

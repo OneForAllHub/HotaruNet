@@ -406,7 +406,8 @@ object HotaruCommunityCounter {
         val cid = getOrCreateClientId()
         val batch = prepareInflightBatch(deltaSessionBytes)
         val sig = signPayload(secret, "beat:$cid:${batch.seq}:${batch.deltaBytes}")
-        val json = """{"cid":"$cid","seq":${batch.seq},"delta":${batch.deltaBytes}}"""
+        val ver = com.v2ray.ang.BuildConfig.VERSION_NAME
+        val json = """{"cid":"$cid","seq":${batch.seq},"delta":${batch.deltaBytes},"platform":"android","ver":"$ver"}"""
 
         val online = executePost("$baseUrl/v1/beat", json, sig, preferSocksPort = socksPort)
         if (online >= 0L) {
@@ -434,7 +435,8 @@ object HotaruCommunityCounter {
         val cid = getOrCreateClientId()
         val batch = prepareInflightBatch(finalDeltaBytes)
         val sig = signPayload(secret, "leave:$cid:${batch.seq}:${batch.deltaBytes}")
-        val json = """{"cid":"$cid","seq":${batch.seq},"delta":${batch.deltaBytes}}"""
+        val ver = com.v2ray.ang.BuildConfig.VERSION_NAME
+        val json = """{"cid":"$cid","seq":${batch.seq},"delta":${batch.deltaBytes},"platform":"android","ver":"$ver"}"""
 
         val online = executePost("$baseUrl/v1/leave", json, sig, preferSocksPort = socksPort, socksTimeoutSec = 2L)
         if (online >= 0L) {

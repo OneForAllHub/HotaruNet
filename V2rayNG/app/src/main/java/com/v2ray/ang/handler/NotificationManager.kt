@@ -87,6 +87,9 @@ object NotificationManager {
             val uid = service.applicationInfo.uid
             initialRxBytes = TrafficStats.getUidRxBytes(uid).takeIf { it != TrafficStats.UNSUPPORTED.toLong() } ?: 0L
             initialTxBytes = TrafficStats.getUidTxBytes(uid).takeIf { it != TrafficStats.UNSUPPORTED.toLong() } ?: 0L
+            MmkvManager.encodeSettings(AppConfig.PREF_HOTARU_LIVE_START_ELAPSED_MS, sessionStartTimeMs)
+            MmkvManager.encodeSettings(AppConfig.PREF_HOTARU_LIVE_DOWN_BYTES, 0L)
+            MmkvManager.encodeSettings(AppConfig.PREF_HOTARU_LIVE_UP_BYTES, 0L)
         }
 
         val flags = PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
@@ -167,6 +170,9 @@ object NotificationManager {
         sessionStartTimeMs = 0L
         sessionTotalDownBytes = 0L
         sessionTotalUpBytes = 0L
+        MmkvManager.encodeSettings(AppConfig.PREF_HOTARU_LIVE_START_ELAPSED_MS, 0L)
+        MmkvManager.encodeSettings(AppConfig.PREF_HOTARU_LIVE_DOWN_BYTES, 0L)
+        MmkvManager.encodeSettings(AppConfig.PREF_HOTARU_LIVE_UP_BYTES, 0L)
     }
 
     /**
@@ -231,24 +237,36 @@ object NotificationManager {
         sessionTotalDownBytes += proxyDownlink
         sessionTotalUpBytes += proxyUplink
 
-        val displayDown = maxOf(sessionTotalDownBytes, deltaUidRx)
-        val displayUp = maxOf(sessionTotalUpBytes, deltaUidTx)
+        // Prefer Xray's exact proxy outbound counters (excluding direct/bypassed domestic traffic);
+        // only fall back to app UID socket counters if core outbound stats remain 0.
+        val hasCoreOutboundStats = (sessionTotalDownBytes + sessionTotalUpBytes) > 0L
+        val displayDown = if (hasCoreOutboundStats) sessionTotalDownBytes else deltaUidRx
+        val displayUp = if (hasCoreOutboundStats) sessionTotalUpBytes else deltaUidTx
 
         val speedDown = if (sinceLastQueryInSeconds >= 0.5) {
-            val coreSpeed = (proxyDownlink / sinceLastQueryInSeconds).toLong()
-            val uidSpeed = ((displayDown - lastDisplayDown) / sinceLastQueryInSeconds).toLong()
-            maxOf(coreSpeed, uidSpeed).coerceAtLeast(0L)
+            if (hasCoreOutboundStats) {
+                (proxyDownlink / sinceLastQueryInSeconds).toLong().coerceAtLeast(0L)
+            } else {
+                ((displayDown - lastDisplayDown) / sinceLastQueryInSeconds).toLong().coerceAtLeast(0L)
+            }
         } else 0L
 
         val speedUp = if (sinceLastQueryInSeconds >= 0.5) {
-            val coreSpeed = (proxyUplink / sinceLastQueryInSeconds).toLong()
-            val uidSpeed = ((displayUp - lastDisplayUp) / sinceLastQueryInSeconds).toLong()
-            maxOf(coreSpeed, uidSpeed).coerceAtLeast(0L)
+            if (hasCoreOutboundStats) {
+                (proxyUplink / sinceLastQueryInSeconds).toLong().coerceAtLeast(0L)
+            } else {
+                ((displayUp - lastDisplayUp) / sinceLastQueryInSeconds).toLong().coerceAtLeast(0L)
+            }
         } else 0L
 
         lastDisplayDown = displayDown
         lastDisplayUp = displayUp
         lastQueryTime = queryTime
+        if (sessionStartTimeMs > 0L) {
+            MmkvManager.encodeSettings(AppConfig.PREF_HOTARU_LIVE_START_ELAPSED_MS, sessionStartTimeMs)
+        }
+        MmkvManager.encodeSettings(AppConfig.PREF_HOTARU_LIVE_DOWN_BYTES, displayDown)
+        MmkvManager.encodeSettings(AppConfig.PREF_HOTARU_LIVE_UP_BYTES, displayUp)
         return TrafficSnapshot(displayDown, displayUp, speedDown, speedUp, queryTime)
     }
 

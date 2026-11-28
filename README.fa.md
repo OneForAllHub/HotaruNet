@@ -28,7 +28,7 @@
 
 ---
 
-## 📥 دانلود مستقیم آخرین نسخه (`v2.3.44`)
+## 📥 دانلود مستقیم آخرین نسخه (`v2.3.45`)
 
 HotaruNet به‌صورت کاملاً نیتیو هم برای **ویندوز (کامپیوتر و لپ‌تاپ)** و هم برای **اندروید (گوشی و تبلت)** در دسترس است — بدون نیاز به خرید اشتراک، وارد کردن دستی کانفیگ یا ساخت اکانت.
 
@@ -45,10 +45,10 @@ HotaruNet به‌صورت کاملاً نیتیو هم برای **ویندوز (
   </thead>
   <tbody>
     <tr>
-      <td align="center"><img src="assets/screenshots/windows-home-en.png" alt="فیلترشکن ویندوز هوتارو نت v2.3.44 – انتخاب بین System Proxy، No Proxy و Wintun TUN" width="210" /></td>
-      <td align="center"><img src="assets/screenshots/windows-connected-noproxy-fa.png" alt="هوتارو نت ویندوز v2.3.44 متصل در حالت بدون پروکسی با نمایش آی‌پی و پورت کپی‌پذیر" width="210" /></td>
-      <td align="center"><img src="assets/screenshots/windows-connected-noproxy-en.png" alt="HotaruNet Windows v2.3.44 connected in No Proxy mode displaying SOCKS5 and HTTP ports" width="210" /></td>
-      <td align="center"><img src="assets/screenshots/windows-stage-robot-en.png" alt="نمایش ربات متحرک مراحل اتصال هوتارو نت ویندوز v2.3.44" width="210" /></td>
+      <td align="center"><img src="assets/screenshots/windows-home-en.png" alt="فیلترشکن ویندوز هوتارو نت v2.3.45 – انتخاب بین System Proxy، No Proxy و Wintun TUN" width="210" /></td>
+      <td align="center"><img src="assets/screenshots/windows-connected-noproxy-fa.png" alt="هوتارو نت ویندوز v2.3.45 متصل در حالت بدون پروکسی با نمایش آی‌پی و پورت کپی‌پذیر" width="210" /></td>
+      <td align="center"><img src="assets/screenshots/windows-connected-noproxy-en.png" alt="HotaruNet Windows v2.3.45 connected in No Proxy mode displaying SOCKS5 and HTTP ports" width="210" /></td>
+      <td align="center"><img src="assets/screenshots/windows-stage-robot-en.png" alt="نمایش ربات متحرک مراحل اتصال هوتارو نت ویندوز v2.3.45" width="210" /></td>
     </tr>
   </tbody>
 </table>
@@ -57,14 +57,14 @@ HotaruNet به‌صورت کاملاً نیتیو هم برای **ویندوز (
 
 | بسته دانلودی | سیستم‌عامل و معماری | حجم | مشخصات و کد اعتبارسنجی (SHA-256) |
 | --- | --- | --- | --- |
-| [**`HotaruNet_v2.3.44_windows_x64.zip`**](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_v2.3.44_windows_x64.zip) | **ویندوز ۱۰ و ۱۱ (۶۴ بیتی)** | **۴۵.۹ مگابایت** | **نسخه پرتابل و آماده اجرا** (شامل نرم‌افزار اصلی `HotaruNet.exe`، سرویس پیشرفته TUN، کتابخانه بهینه‌شده Xray-core و درایور رسمی Wintun).<br/>`SHA-256: 3A49F3C4DAC2B93F5E54672807430F525A7854F7C091F6869C0404C0A736EF11` |
+| [**`HotaruNet_v2.3.45_windows_x64.zip`**](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.45/HotaruNet_v2.3.45_windows_x64.zip) | **ویندوز ۱۰ و ۱۱ (۶۴ بیتی)** | **۴۵.۹ مگابایت** | **نسخه پرتابل و آماده اجرا** (شامل نرم‌افزار اصلی `HotaruNet.exe`، سرویس پیشرفته TUN، کتابخانه بهینه‌شده Xray-core و درایور رسمی Wintun).<br/>`SHA-256: 25567243E173AD581F3ED9397973C1FCF5E503233EB517AD5F6AE963F1194CB5` |
 
 #### 🚀 راهنمای سریع استفاده در ویندوز:
-1. فایل [**`HotaruNet_v2.3.44_windows_x64.zip`**](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_v2.3.44_windows_x64.zip) را دانلود کرده و **کل پوشه را کامل از حالت فشرده خارج (Extract) کنید** *(مستقیم از داخل پنجره WinRAR یا فایل ZIP اجرا نکنید تا فایل‌های کنار برنامه شامل `libhotarucore.dll`، `WebView2Loader.dll`، `wintun.dll` و پوشه `assets` به‌درستی بارگذاری شوند)*.
+1. فایل [**`HotaruNet_v2.3.45_windows_x64.zip`**](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.45/HotaruNet_v2.3.45_windows_x64.zip) را دانلود کرده و **کل پوشه را کامل از حالت فشرده خارج (Extract) کنید** *(مستقیم از داخل پنجره WinRAR یا فایل ZIP اجرا نکنید تا فایل‌های کنار برنامه شامل `libhotarucore.dll`، `WebView2Loader.dll`، `wintun.dll` و پوشه `assets` به‌درستی بارگذاری شوند)*.
 2. روی فایل **`HotaruNet.exe`** کلیک کنید تا اجرا شود.
 3. حالت دلخواه را انتخاب کنید:
    - **System Proxy (پیش‌فرض):** بدون نیاز به دسترسی Administrator فوراً متصل می‌شود و پروکسی سیستم را تنظیم و هنگام خروج ریست می‌کند.
-   - **بدون پروکسی / No Proxy *(جدید در v2.3.44)*:** پروکسی ویندوز را تغییر نمی‌دهد؛ فقط سرویس محلی (`SOCKS5` و `HTTP` روی اولین پورت آزاد از `10808/10809`) را روشن کرده و آی‌پی و پورت را با دکمه کپی برای تنظیم دستی در مرورگر، تلگرام یا ابزارها نمایش می‌دهد.
+   - **بدون پروکسی / No Proxy *(جدید در v2.3.45)*:** پروکسی ویندوز را تغییر نمی‌دهد؛ فقط سرویس محلی (`SOCKS5` و `HTTP` روی اولین پورت آزاد از `10808/10809`) را روشن کرده و آی‌پی و پورت را با دکمه کپی برای تنظیم دستی در مرورگر، تلگرام یا ابزارها نمایش می‌دهد.
    - **حالت TUN:** کارت شبکه مجازی امن ایجاد می‌کند تا کل ترافیک ویندوز از تونل رد شود. برای فعال‌سازی کافی است یک‌بار برنامه را با *Run as administrator* اجرا نمایید.
 4. دکمهٔ دایره‌ای **اتصال (CONNECT)** را بزنید تا ربات هوشمند ۴ مرحله‌ای بهترین مسیر را قفل کند!
 
@@ -74,15 +74,15 @@ HotaruNet به‌صورت کاملاً نیتیو هم برای **ویندوز (
 
 ### 📱 دانلود مستقیم نسخه اندروید (APK)
 
-فایل‌های نصبی رسمی و امضاشده (APK) مستقیماً از [**صفحه Releases گیت‌هاب (`v2.3.44`)**](https://github.com/OneForAllHub/HotaruNet/releases/latest):
+فایل‌های نصبی رسمی و امضاشده (APK) مستقیماً از [**صفحه Releases گیت‌هاب (`v2.3.45`)**](https://github.com/OneForAllHub/HotaruNet/releases/latest):
 
 | نام فایل APK | پردازنده / دستگاه هدف | پیشنهاد برای چه گوشی‌هایی؟ |
 | --- | --- | --- |
-| [`HotaruNet_2.3.44_arm64-v8a.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_arm64-v8a.apk) | **ARM64 (64 بیتی)** (۲۸.۷ MB) | مناسب برای تمام گوشی‌های جدید سامسونگ، شیائومی و... (توصیه‌شده) |
-| [`HotaruNet_2.3.44_armeabi-v7a.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_armeabi-v7a.apk) | **ARMv7 (32 بیتی)** (۲۹.۲ MB) | گوشی‌ها و تبلت‌های قدیمی‌تر |
-| [`HotaruNet_2.3.44_x86_64.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_x86_64.apk) | **x86_64** (۲۹.۷ MB) | شبیه‌سازهای اندروید روی کامپیوتر و کروم‌بوک |
-| [`HotaruNet_2.3.44_x86.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_x86.apk) | **x86** (۳۰.۲ MB) | شبیه‌سازهای ۳۲ بیتی |
-| [`HotaruNet_2.3.44_universal.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.44/HotaruNet_2.3.44_universal.apk) | **همه‌کاره (Universal)** (۶۶.۶ MB) | قابل نصب روی تمام دستگاه‌ها بدون نیاز به دانستن مدل CPU |
+| [`HotaruNet_2.3.45_arm64-v8a.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.45/HotaruNet_2.3.45_arm64-v8a.apk) | **ARM64 (64 بیتی)** (۲۸.۷ MB) | مناسب برای تمام گوشی‌های جدید سامسونگ، شیائومی و... (توصیه‌شده) |
+| [`HotaruNet_2.3.45_armeabi-v7a.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.45/HotaruNet_2.3.45_armeabi-v7a.apk) | **ARMv7 (32 بیتی)** (۲۹.۲ MB) | گوشی‌ها و تبلت‌های قدیمی‌تر |
+| [`HotaruNet_2.3.45_x86_64.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.45/HotaruNet_2.3.45_x86_64.apk) | **x86_64** (۲۹.۷ MB) | شبیه‌سازهای اندروید روی کامپیوتر و کروم‌بوک |
+| [`HotaruNet_2.3.45_x86.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.45/HotaruNet_2.3.45_x86.apk) | **x86** (۳۰.۲ MB) | شبیه‌سازهای ۳۲ بیتی |
+| [`HotaruNet_2.3.45_universal.apk`](https://github.com/OneForAllHub/HotaruNet/releases/download/v2.3.45/HotaruNet_2.3.45_universal.apk) | **همه‌کاره (Universal)** (۶۶.۶ MB) | قابل نصب روی تمام دستگاه‌ها بدون نیاز به دانستن مدل CPU |
 
 > 💡 هش SHA-256 همهٔ فایل‌ها در صفحهٔ [Releases](https://github.com/OneForAllHub/HotaruNet/releases/latest) قرار دارد و روی اندروید ۷ تا ۱۵ (API 24–35) پشتیبانی می‌شود.
 
@@ -92,7 +92,7 @@ HotaruNet به‌صورت کاملاً نیتیو هم برای **ویندوز (
 
 در هر دو نسخهٔ **ویندوز و اندروید**، سیستم بررسی نسخه جدید به‌صورت هوشمند عمل می‌کند:
 - **بررسی کاملاً بی‌صدا:** هنگام اجرای برنامه و ۱.۵ ثانیه پس از برقراری اتصال، نسخهٔ جدید در پس‌زمینه بدون مصرف پهنای باند اضافی چک می‌شود.
-- **اعلان پنجره‌ای برجسته (Modal Dialog):** به محض اینکه نسخه جدیدی منتشر شود، دقیقاً مشابه اندروید، یک پنجرهٔ مدرن با نمایش تغییرات (`v2.3.43 ➔ v2.3.44`)، لیست بهبودها و دکمهٔ دریافت مستقیم نمایش داده می‌شود.
+- **اعلان پنجره‌ای برجسته (Modal Dialog):** به محض اینکه نسخه جدیدی منتشر شود، دقیقاً مشابه اندروید، یک پنجرهٔ مدرن با نمایش تغییرات (`v2.3.43 ➔ v2.3.45`)، لیست بهبودها و دکمهٔ دریافت مستقیم نمایش داده می‌شود.
 - تا زمانی که نسخهٔ شما به‌روز باشد، برنامه کاملاً ساکت و بدون مزاحمت عمل می‌کند.
 
 ---
@@ -134,8 +134,8 @@ HotaruNet به‌صورت کاملاً نیتیو هم برای **ویندوز (
   </thead>
   <tbody>
     <tr>
-      <td align="center"><img src="assets/screenshots/android-stage-fa.png" alt="نمایش ربات متحرک مراحل اتصال در اندروید هوتارو نت v2.3.44 فارسی" width="210" /></td>
-      <td align="center"><img src="assets/screenshots/android-stage-en.png" alt="نمایش ربات متحرک مراحل اتصال در اندروید هوتارو نت v2.3.44 انگلیسی" width="210" /></td>
+      <td align="center"><img src="assets/screenshots/android-stage-fa.png" alt="نمایش ربات متحرک مراحل اتصال در اندروید هوتارو نت v2.3.45 فارسی" width="210" /></td>
+      <td align="center"><img src="assets/screenshots/android-stage-en.png" alt="نمایش ربات متحرک مراحل اتصال در اندروید هوتارو نت v2.3.45 انگلیسی" width="210" /></td>
       <td align="center"><img src="assets/screenshots/about-fa.png" alt="پنجره درباره ما و دکمه ارتباط با سازنده در هوتارو نت فارسی" width="210" /></td>
       <td align="center"><img src="assets/screenshots/about-en.png" alt="پنجره درباره ما و دکمه ارتباط با سازنده در هوتارو نت انگلیسی" width="210" /></td>
     </tr>
@@ -158,7 +158,7 @@ HotaruNet با رابط کاربری اختصاصی و موتور هوشمند *
   3. **`Hysteria 2`** (پروتکل QUIC / UDP ضد‌اختلال با کنترل ازدحام BBR)
   4. **`XHTTP / SplitHTTP`** (مبتنی بر HTTP/2 و HTTP/3 مقاوم در برابر مسدودسازی)
   5. **`WebSocket + TLS`** (پشتیبان از طریق شبکه توزیع محتوا CDN)
-- **۳ حالت تونل‌سازی در ویندوز (`v2.3.44`):**
+- **۳ حالت تونل‌سازی در ویندوز (`v2.3.45`):**
   - **پروکسی سیستم (System Proxy):** تنظیم سریع پروکسی مرورگر با قابلیت پاکسازی و بازیابی خودکار ریجستری ویندوز هنگام بستن برنامه.
   - **بدون پروکسی (`No Proxy`):** روشن شدن سرویس محلی `SOCKS5` و `HTTP` روی پورت آزاد بدون دستکاری پروکسی ویندوز، مناسب برای مرورگر، تلگرام، ابزارهای برنامه‌نویسی و تنظیم دستی هر برنامه.
   - **کارت شبکه مجازی Wintun:** تونل‌سازی سراسری و فوق‌سریع در سطح هسته ویندوز برای تمام برنامه‌ها، بازی‌ها و ترمینال.

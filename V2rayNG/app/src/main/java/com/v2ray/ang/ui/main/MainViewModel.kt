@@ -348,12 +348,7 @@ class MainViewModel(
                 delay(32)
                 dataSource.initAssets()
                 dataSource.syncSubscriptions()
-                viewModelScope.launch(ioDispatcher) {
-                    val picked = HotaruSmartEngine.selectBestServer(getApplication(), forceRescan = false)
-                    if (picked != null) {
-                        syncSelectedServerMetadata(overridePing = picked.delayMs.toInt().takeIf { it > 0 })
-                    }
-                }
+                HotaruSmartEngine.optimizeForClientNetwork(getApplication())
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
@@ -810,11 +805,18 @@ class MainViewModel(
             val picked = withContext(ioDispatcher) {
                 HotaruSmartEngine.selectBestServer(getApplication(), forceRescan = forceRescan)
             }
+            reloadServerList()
             syncSelectedServerMetadata(overridePing = picked?.delayMs?.toInt()?.takeIf { it > 0 })
-            picked != null && picked.delayMs > 0L
+            val ready = picked != null && picked.delayMs > 0L
+            if (!ready) {
+                HotaruSmartEngine.resetConnectStage()
+            }
+            ready
         } catch (cancelled: CancellationException) {
+            HotaruSmartEngine.resetConnectStage()
             throw cancelled
         } catch (error: Exception) {
+            HotaruSmartEngine.resetConnectStage()
             LogUtil.e(AppConfig.TAG, "Smart Auto-Pilot optimization failed", error)
             false
         } finally {
@@ -1008,6 +1010,9 @@ class MainViewModel(
 
     // ---------- Running state ----------
     private fun updateRunningState(running: Boolean, clearTestingText: Boolean = true) {
+        if (running) {
+            HotaruSmartEngine.resetConnectStage()
+        }
         if (!running || clearTestingText) testRequests.invalidateCurrent()
         _uiState.update { state ->
             state.copy(

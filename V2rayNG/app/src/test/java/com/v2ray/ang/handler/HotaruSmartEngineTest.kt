@@ -147,13 +147,13 @@ class HotaruSmartEngineTest {
 
     @Test
     fun `isCleanHarvestUri rejects scanner server IP and bogus URIs`() {
-        assertFalse(HotaruSmartEngine.isCleanHarvestUri("vless://uuid@192.0.2.10:443?type=tcp&security=reality"))
-        assertFalse(HotaruSmartEngine.isCleanHarvestUri("vless://uuid@192.0.2.99:443?type=tcp&security=reality"))
-        val selfVmessJson = """{"v":"2","ps":"self","add":"192.0.2.10","port":"443","id":"00000000-0000-0000-0000-000000000000"}"""
+        assertFalse(HotaruSmartEngine.isCleanHarvestUri("vless://uuid@198.51.100.42:443?type=tcp&security=reality"))
+        assertFalse(HotaruSmartEngine.isCleanHarvestUri("vless://uuid@31.56.7.99:443?type=tcp&security=reality"))
+        val selfVmessJson = """{"v":"2","ps":"self","add":"198.51.100.42","port":"443","id":"00000000-0000-0000-0000-000000000000"}"""
         val selfVmessUri = "vmess://" + java.util.Base64.getEncoder().encodeToString(selfVmessJson.toByteArray(Charsets.UTF_8))
         assertFalse(HotaruSmartEngine.isCleanHarvestUri(selfVmessUri))
         assertFalse(HotaruSmartEngine.isCleanHarvestUri("vless://uuid@127.0.0.1:443?type=tcp&security=reality"))
-        assertFalse(HotaruSmartEngine.isCleanHarvestUri("trojan://pwd@[2001:db8::1]:2097?security=reality"))
+        assertFalse(HotaruSmartEngine.isCleanHarvestUri("trojan://pwd@[2607:9d00:2000:29c::9051:bd97]:2097?security=reality"))
         assertTrue(HotaruSmartEngine.isCleanHarvestUri("vless://uuid@198.51.100.42:443?type=tcp&security=reality"))
     }
 
